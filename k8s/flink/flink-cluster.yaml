@@ -1,0 +1,31 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: greenops-flink
+  namespace: greenops
+spec:
+  image: flink-s3:1.19
+  imagePullPolicy: Never
+  flinkVersion: v1_19
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    state.checkpoints.dir: s3://greenops/checkpoints
+    state.savepoints.dir: s3://greenops/savepoints
+    s3.endpoint: http://minio.greenops.svc.cluster.local:9000
+    s3.access-key: greenops
+    s3.secret-key: greenops123
+    s3.path.style.access: "true"
+    execution.checkpointing.interval: "10000"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "1024m"
+      cpu: 0.5
+  taskManager:
+    resource:
+      memory: "1024m"
+      cpu: 0.5
+  job:
+    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+    parallelism: 1
+    upgradeMode: savepoint

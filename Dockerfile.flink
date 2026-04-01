@@ -1,0 +1,3 @@
+FROM flink:1.19
+RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop && \
+    cp /opt/flink/opt/flink-s3-fs-hadoop-*.jar /opt/flink/plugins/s3-fs-hadoop/
