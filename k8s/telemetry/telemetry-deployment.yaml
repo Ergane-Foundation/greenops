@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenops-telemetry
+  namespace: greenops
+  labels:
+    app: greenops-telemetry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greenops-telemetry
+  template:
+    metadata:
+      labels:
+        app: greenops-telemetry
+    spec:
+      containers:
+        - name: telemetry
+          image: greenops/telemetry:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CARBON_THRESHOLD_GCO2
+              value: "400"
+            - name: ELECTRICITY_ZONE
+              value: "IN-NO"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenops-telemetry
+  namespace: greenops
+  labels:
+    app: greenops-telemetry
+spec:
+  type: ClusterIP
+  selector:
+    app: greenops-telemetry
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
