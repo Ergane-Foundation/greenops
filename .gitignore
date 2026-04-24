@@ -1,0 +1,19 @@
+# Maven
+operator/target/
+**/target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+
+# Env
+.env
+.env.local
