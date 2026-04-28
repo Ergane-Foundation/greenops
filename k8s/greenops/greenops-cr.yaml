@@ -1,0 +1,10 @@
+apiVersion: greenops.io/v1
+kind: GreenOpsController
+metadata:
+  name: greenops-flink-controller
+  namespace: greenops
+spec:
+  carbonThreshold: 400
+  flinkJobName: greenops-flink
+  flinkNamespace: greenops
+  telemetryEndpoint: "http://greenops-telemetry.greenops.svc.cluster.local:8080/telemetry/status"

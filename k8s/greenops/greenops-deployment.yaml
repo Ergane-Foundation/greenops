@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenops-operator
+  namespace: greenops
+  labels:
+    app: greenops-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greenops-operator
+  template:
+    metadata:
+      labels:
+        app: greenops-operator
+    spec:
+      serviceAccountName: greenops-operator
+      containers:
+        - name: operator
+          image: greenops/operator:latest
+          imagePullPolicy: Never
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx256m"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
