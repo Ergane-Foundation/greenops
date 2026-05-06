@@ -34,6 +34,14 @@ spec:
                   type: string
                 telemetryEndpoint:
                   type: string
+                flinkRestEndpoint:
+                  type: string
+                savepointDirectory:
+                  type: string
+                  default: "s3://greenops/savepoints"
+                savepointTimeoutSeconds:
+                  type: integer
+                  default: 300
             status:
               type: object
               properties:
@@ -45,6 +53,14 @@ spec:
                   type: string
                 lastReconciledAt:
                   type: string
+                savepointPhase:
+                  type: string
+                lastSavepointPath:
+                  type: string
+                lastSavepointAt:
+                  type: string
+                lastError:
+                  type: string
       additionalPrinterColumns:
         - name: Grid
           type: string
@@ -55,6 +71,9 @@ spec:
         - name: Action
           type: string
           jsonPath: .status.lastAction
+        - name: Savepoint
+          type: string
+          jsonPath: .status.savepointPhase
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

@@ -5,6 +5,9 @@ public class GreenOpsSpec {
     private String flinkJobName;
     private String flinkNamespace;
     private String telemetryEndpoint;
+    private String flinkRestEndpoint;
+    private String savepointDirectory = "s3://greenops/savepoints";
+    private int savepointTimeoutSeconds = 300;
 
     public int getCarbonThreshold() { return carbonThreshold; }
     public void setCarbonThreshold(int carbonThreshold) { this.carbonThreshold = carbonThreshold; }
@@ -17,4 +20,13 @@ public class GreenOpsSpec {
 
     public String getTelemetryEndpoint() { return telemetryEndpoint; }
     public void setTelemetryEndpoint(String telemetryEndpoint) { this.telemetryEndpoint = telemetryEndpoint; }
+
+    public String getFlinkRestEndpoint() { return flinkRestEndpoint; }
+    public void setFlinkRestEndpoint(String flinkRestEndpoint) { this.flinkRestEndpoint = flinkRestEndpoint; }
+
+    public String getSavepointDirectory() { return savepointDirectory; }
+    public void setSavepointDirectory(String savepointDirectory) { this.savepointDirectory = savepointDirectory; }
+
+    public int getSavepointTimeoutSeconds() { return savepointTimeoutSeconds; }
+    public void setSavepointTimeoutSeconds(int savepointTimeoutSeconds) { this.savepointTimeoutSeconds = savepointTimeoutSeconds; }
 }
