@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: greenops-dashboard
+  namespace: greenops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: greenops-dashboard
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["greenops.io"]
+    resources: ["greenopscontrollers", "greenopscontrollers/status"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: greenops-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: greenops-dashboard
+subjects:
+  - kind: ServiceAccount
+    name: greenops-dashboard
+    namespace: greenops
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenops-dashboard
+  namespace: greenops
+  labels:
+    app: greenops-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greenops-dashboard
+  template:
+    metadata:
+      labels:
+        app: greenops-dashboard
+    spec:
+      serviceAccountName: greenops-dashboard
+      containers:
+        - name: dashboard
+          image: greenops/dashboard:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: GREENOPS_NAMESPACE
+              value: "greenops"
+            - name: TELEMETRY_URL
+              value: "http://greenops-telemetry.greenops.svc.cluster.local:8080/telemetry/status"
+            - name: CONTROLLER_NAME
+              value: "greenops-flink-controller"
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenops-dashboard
+  namespace: greenops
+  labels:
+    app: greenops-dashboard
+spec:
+  type: ClusterIP
+  selector:
+    app: greenops-dashboard
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
