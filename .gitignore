@@ -17,3 +17,8 @@ operator/target/
 # Env
 .env
 .env.local
+
+# Local-only notes, not for the public repo
+docs/learn.md
+docs/learning-log.md
+docs/project-analysis-context.md
