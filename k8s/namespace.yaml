@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: greenops
+  labels:
+    app.kubernetes.io/name: greenops
+    app.kubernetes.io/part-of: greenops

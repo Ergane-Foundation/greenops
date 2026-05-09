@@ -48,7 +48,7 @@ if ! minikube status >/dev/null 2>&1; then
 else
   log "Minikube already running."
 fi
-p
+
 log "Pointing docker CLI at Minikube's daemon (eval minikube docker-env)"
 eval "$(minikube docker-env)"
 
@@ -77,6 +77,11 @@ fi
 log "Applying namespace"
 kubectl apply -f k8s/namespace.yaml
 
+# MinIO reads its root credentials from this Secret via auth.existingSecret, and
+# the Flink pods read the same keys, so it has to exist before the Helm install.
+log "Applying object store credentials Secret"
+kubectl apply -f k8s/minio/object-store-secret.yaml
+
 if ! helm repo list 2>/dev/null | grep -q '^flink-operator-repo'; then
   helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.8.0/
 fi
@@ -104,11 +109,27 @@ helm upgrade --install minio bitnami/minio \
 
 
 # 4. MinIO bucket
-log "Ensuring MinIO bucket '$MINIO_BUCKET' exists"
-MINIO_POD="$(kubectl get pod -n "$NS" -l app=minio -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec -n "$NS" "$MINIO_POD" -- \
-  mc alias set local "http://localhost:9000" "$MINIO_USER" "$MINIO_PASSWORD" >/dev/null
-kubectl exec -n "$NS" "$MINIO_POD" -- mc mb -p "local/$MINIO_BUCKET" >/dev/null 2>&1 || true
+# The chart's defaultBuckets setting creates the bucket on first start. Flink
+# cannot create it on demand, so verify rather than assume, and fall back to
+# creating it by hand if the chart did not.
+log "Verifying MinIO bucket '$MINIO_BUCKET' exists"
+MINIO_POD="$(kubectl get pod -n "$NS" -l app.kubernetes.io/name=minio -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+if [[ -z "$MINIO_POD" ]]; then
+  MINIO_POD="$(kubectl get pod -n "$NS" -l app=minio -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+fi
+
+if [[ -z "$MINIO_POD" ]]; then
+  warn "Could not locate a MinIO pod; skipping bucket verification"
+else
+  kubectl exec -n "$NS" "$MINIO_POD" -- \
+    mc alias set local "http://localhost:9000" "$MINIO_USER" "$MINIO_PASSWORD" >/dev/null 2>&1 || true
+  if kubectl exec -n "$NS" "$MINIO_POD" -- mc ls "local/$MINIO_BUCKET" >/dev/null 2>&1; then
+    log "Bucket '$MINIO_BUCKET' present"
+  else
+    warn "Bucket '$MINIO_BUCKET' missing; creating it"
+    kubectl exec -n "$NS" "$MINIO_POD" -- mc mb -p "local/$MINIO_BUCKET" >/dev/null 2>&1 || true
+  fi
+fi
 
 
 # 5. Workloads
