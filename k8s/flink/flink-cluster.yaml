@@ -12,11 +12,30 @@ spec:
     state.checkpoints.dir: s3://greenops/checkpoints
     state.savepoints.dir: s3://greenops/savepoints
     s3.endpoint: http://minio.greenops.svc.cluster.local:9000
-    s3.access-key: greenops
-    s3.secret-key: greenops123
     s3.path.style.access: "true"
     execution.checkpointing.interval: "10000"
+    s3.access-key: ${S3_ACCESS_KEY}
+    s3.secret-key: ${S3_SECRET_KEY}
   serviceAccount: flink
+  podTemplate:
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: greenops-flink-pod-template
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: greenops-object-store
+                  key: root-user
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: greenops-object-store
+                  key: root-password
   jobManager:
     resource:
       memory: "1024m"
