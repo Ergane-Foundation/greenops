@@ -34,6 +34,15 @@ spec:
                   type: string
                 telemetryEndpoint:
                   type: string
+                cooperativeSuspension:
+                  type: boolean
+                  default: true
+                  description: >-
+                    Suspend by patching FlinkDeployment.spec.job.state so the
+                    Flink Kubernetes Operator takes the savepoint and shuts the
+                    cluster down itself. Disable only where no FlinkDeployment
+                    owns the target, in which case the operator triggers a
+                    savepoint over REST and scales the Deployment directly.
                 flinkRestEndpoint:
                   type: string
                 savepointDirectory:

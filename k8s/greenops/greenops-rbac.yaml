@@ -16,7 +16,7 @@ rules:
     resources: ["deployments", "deployments/scale"]
     verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: ["flink.apache.org"]
-    resources: ["flinkdeployments"]
+    resources: ["flinkdeployments", "flinkdeployments/status"]
     verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: [""]
     resources: ["events"]

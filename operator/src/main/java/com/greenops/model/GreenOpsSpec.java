@@ -9,6 +9,8 @@ public class GreenOpsSpec {
     private String savepointDirectory = "s3://greenops/savepoints";
     private int savepointTimeoutSeconds = 300;
 
+    private boolean cooperativeSuspension = true;
+
     public int getCarbonThreshold() { return carbonThreshold; }
     public void setCarbonThreshold(int carbonThreshold) { this.carbonThreshold = carbonThreshold; }
 
@@ -29,4 +31,7 @@ public class GreenOpsSpec {
 
     public int getSavepointTimeoutSeconds() { return savepointTimeoutSeconds; }
     public void setSavepointTimeoutSeconds(int savepointTimeoutSeconds) { this.savepointTimeoutSeconds = savepointTimeoutSeconds; }
+
+    public boolean isCooperativeSuspension() { return cooperativeSuspension; }
+    public void setCooperativeSuspension(boolean cooperativeSuspension) { this.cooperativeSuspension = cooperativeSuspension; }
 }
