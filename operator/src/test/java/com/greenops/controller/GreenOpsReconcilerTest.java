@@ -213,4 +213,65 @@ class GreenOpsReconcilerTest {
 
         verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
     }
+
+    @Nested
+    @DisplayName("cooperative mode hands the lifecycle to the Flink operator")
+    class Cooperative {
+
+        @Test
+        void requestsSuspendOnADirtyGrid() {
+            gridReturns("DIRTY", 850);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+            when(flinkDeployment.suspend(NS, JOB)).thenReturn(true);
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flinkDeployment).suspend(NS, JOB);
+            verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
+            assertEquals("SUSPEND_REQUESTED", resource.getStatus().getLastAction());
+        }
+
+        @Test
+        @DisplayName("resume seeds the job from the savepoint written on the way down")
+        void resumesFromTheRecordedSavepoint() {
+            gridReturns("GREEN", 120);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+            when(flinkDeployment.getLastSavepointPath(NS, JOB))
+                    .thenReturn(Optional.of("s3://greenops/savepoints/savepoint-xyz"));
+            when(flinkDeployment.resume(eq(NS), eq(JOB), anyString())).thenReturn(true);
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flinkDeployment).resume(NS, JOB, "s3://greenops/savepoints/savepoint-xyz");
+            assertEquals("RESUME_FROM_SAVEPOINT", resource.getStatus().getLastAction());
+            assertEquals("RESTORED", resource.getStatus().getSavepointPhase());
+        }
+
+        @Test
+        void doesNotResuspendAnAlreadySuspendedJob() {
+            gridReturns("DIRTY", 850);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flinkDeployment, never()).suspend(anyString(), anyString());
+            assertEquals("ALREADY_SUSPENDED", resource.getStatus().getLastAction());
+        }
+
+        @Test
+        void reportsAFailedSuspendPatch() {
+            gridReturns("DIRTY", 850);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+            when(flinkDeployment.suspend(NS, JOB)).thenReturn(false);
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            assertEquals("SUSPEND_FAILED", resource.getStatus().getLastAction());
+            assertNotNull(resource.getStatus().getLastError());
+        }
+    }
 }
