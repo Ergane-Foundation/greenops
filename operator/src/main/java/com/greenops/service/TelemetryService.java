@@ -35,7 +35,8 @@ public class TelemetryService {
             JsonNode node = mapper.readTree(resp.body());
             String status = node.path("grid_status").asText("UNKNOWN");
             int intensity = node.path("carbon_intensity").asInt(0);
-            return new GridStatus(status, intensity);
+            String zone = node.path("zone").asText("unknown");
+            return new GridStatus(status, intensity, zone);
         } catch (Exception e) {
             log.error("Failed to fetch telemetry from {}: {}", telemetryEndpoint, e.getMessage());
             return GridStatus.unknown();
@@ -45,16 +46,23 @@ public class TelemetryService {
     public static class GridStatus {
         private final String status;
         private final int carbonIntensity;
+        private final String zone;
 
         public GridStatus(String status, int carbonIntensity) {
-            this.status = status;
-            this.carbonIntensity = carbonIntensity;
+            this(status, carbonIntensity, "unknown");
         }
 
-        public static GridStatus unknown() { return new GridStatus("UNKNOWN", 0); }
+        public GridStatus(String status, int carbonIntensity, String zone) {
+            this.status = status;
+            this.carbonIntensity = carbonIntensity;
+            this.zone = zone;
+        }
+
+        public static GridStatus unknown() { return new GridStatus("UNKNOWN", 0, "unknown"); }
 
         public String getStatus() { return status; }
         public int getCarbonIntensity() { return carbonIntensity; }
+        public String getZone() { return zone; }
 
         public boolean isDirty(int threshold) {
             if ("DIRTY".equalsIgnoreCase(status)) return true;
