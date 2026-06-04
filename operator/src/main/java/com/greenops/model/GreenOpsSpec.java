@@ -10,6 +10,7 @@ public class GreenOpsSpec {
     private int savepointTimeoutSeconds = 300;
 
     private boolean cooperativeSuspension = true;
+    private double nodePowerWatts = 250.0;
 
     public int getCarbonThreshold() { return carbonThreshold; }
     public void setCarbonThreshold(int carbonThreshold) { this.carbonThreshold = carbonThreshold; }
@@ -34,4 +35,7 @@ public class GreenOpsSpec {
 
     public boolean isCooperativeSuspension() { return cooperativeSuspension; }
     public void setCooperativeSuspension(boolean cooperativeSuspension) { this.cooperativeSuspension = cooperativeSuspension; }
+
+    public double getNodePowerWatts() { return nodePowerWatts; }
+    public void setNodePowerWatts(double nodePowerWatts) { this.nodePowerWatts = nodePowerWatts; }
 }

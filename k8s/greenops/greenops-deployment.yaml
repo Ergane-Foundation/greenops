@@ -20,9 +20,14 @@ spec:
         - name: operator
           image: greenops/operator:latest
           imagePullPolicy: Never
+          ports:
+            - name: metrics
+              containerPort: 9400
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-Xmx256m"
+            - name: METRICS_PORT
+              value: "9400"
           resources:
             requests:
               cpu: "100m"
@@ -30,3 +35,19 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenops-operator
+  namespace: greenops
+  labels:
+    app: greenops-operator
+spec:
+  type: ClusterIP
+  selector:
+    app: greenops-operator
+  ports:
+    - name: metrics
+      port: 9400
+      targetPort: 9400

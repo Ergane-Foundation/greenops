@@ -1,6 +1,7 @@
 package com.greenops;
 
 import com.greenops.controller.GreenOpsReconciler;
+import com.greenops.metrics.GreenOpsMetrics;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.javaoperatorsdk.operator.Operator;
@@ -14,6 +15,9 @@ public class GreenOpsOperator {
     public static void main(String[] args) {
         log.info("Starting GreenOps operator...");
 
+        int metricsPort = Integer.parseInt(System.getenv().getOrDefault("METRICS_PORT", "9400"));
+        GreenOpsMetrics.start(metricsPort);
+
         KubernetesClient client = new KubernetesClientBuilder().build();
         Operator operator = new Operator(o -> o.withKubernetesClient(client));
         operator.register(new GreenOpsReconciler(client));
@@ -24,6 +28,7 @@ public class GreenOpsOperator {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down operator...");
             operator.stop();
+            GreenOpsMetrics.stop();
             client.close();
         }));
     }

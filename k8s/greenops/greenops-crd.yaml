@@ -43,6 +43,9 @@ spec:
                     cluster down itself. Disable only where no FlinkDeployment
                     owns the target, in which case the operator triggers a
                     savepoint over REST and scales the Deployment directly.
+                nodePowerWatts:
+                  type: number
+                  default: 250
                 flinkRestEndpoint:
                   type: string
                 savepointDirectory:

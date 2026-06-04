@@ -2,6 +2,7 @@ package com.greenops.controller;
 
 import com.greenops.model.GreenOpsResource;
 import com.greenops.model.GreenOpsSpec;
+import com.greenops.metrics.GreenOpsMetrics;
 import com.greenops.model.GreenOpsStatus;
 import com.greenops.service.FlinkDeploymentService;
 import com.greenops.service.FlinkService;
@@ -53,17 +54,30 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
                     .rescheduleAfter(Duration.ofSeconds(RECONCILE_INTERVAL_SECONDS));
         }
 
+        String controller = resource.getMetadata().getName();
         TelemetryService.GridStatus gridStatus = telemetryService.getCurrentStatus(spec.getTelemetryEndpoint());
         status.setGridStatus(gridStatus.getStatus());
         status.setCarbonIntensity(gridStatus.getCarbonIntensity());
 
+        boolean dirty = gridStatus.isDirty(spec.getCarbonThreshold());
+        GreenOpsMetrics.recordGrid(controller, gridStatus.getZone(),
+                gridStatus.getCarbonIntensity(), spec.getCarbonThreshold(), dirty);
+
         log.info("[GreenOps] Grid status: {} | Carbon: {} gCO2/kWh | Threshold: {}",
                 gridStatus.getStatus(), gridStatus.getCarbonIntensity(), spec.getCarbonThreshold());
 
-        if (gridStatus.isDirty(spec.getCarbonThreshold())) {
+        if (dirty) {
             handleDirtyGrid(spec, status);
+            GreenOpsMetrics.accrueSuspension(controller, spec.getFlinkJobName(),
+                    gridStatus.getCarbonIntensity(), spec.getNodePowerWatts());
         } else {
             handleCleanGrid(spec, status);
+            GreenOpsMetrics.markRunning(controller, spec.getFlinkJobName(), spec.getNodePowerWatts());
+        }
+
+        GreenOpsMetrics.recordAction(controller, status.getLastAction());
+        if (status.getSavepointPhase() != null) {
+            GreenOpsMetrics.recordSavepoint(controller, status.getSavepointPhase());
         }
 
         resource.setStatus(status);
