@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greenops-grafana-datasources
+  namespace: greenops
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://greenops-prometheus.greenops.svc.cluster.local:9090
+        isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greenops-grafana-dashboard-provider
+  namespace: greenops
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: greenops
+        orgId: 1
+        folder: GreenOps
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenops-grafana
+  namespace: greenops
+  labels:
+    app: greenops-grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greenops-grafana
+  template:
+    metadata:
+      labels:
+        app: greenops-grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.1.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: datasources
+          configMap:
+            name: greenops-grafana-datasources
+        - name: dashboard-provider
+          configMap:
+            name: greenops-grafana-dashboard-provider
+        - name: dashboards
+          configMap:
+            name: greenops-grafana-dashboards
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenops-grafana
+  namespace: greenops
+  labels:
+    app: greenops-grafana
+spec:
+  type: ClusterIP
+  selector:
+    app: greenops-grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
