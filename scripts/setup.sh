@@ -147,6 +147,13 @@ kubectl apply -f k8s/greenops/greenops-deployment.yaml
 log "Applying dashboard"
 kubectl apply -f k8s/dashboard/dashboard-deployment.yaml
 
+log "Applying monitoring stack"
+kubectl create configmap greenops-grafana-dashboards \
+  --from-file=greenops-dashboard.json=grafana/greenops-dashboard.json \
+  -n "$NS" --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -f k8s/monitoring/prometheus.yaml
+kubectl apply -f k8s/monitoring/grafana.yaml
+
 log "Applying GreenOpsController CR"
 kubectl apply -f k8s/greenops/greenops-cr.yaml
 
@@ -159,6 +166,8 @@ log "Waiting for rollouts..."
 kubectl -n "$NS" rollout status deployment/greenops-telemetry --timeout=3m
 kubectl -n "$NS" rollout status deployment/greenops-operator  --timeout=3m
 kubectl -n "$NS" rollout status deployment/greenops-dashboard --timeout=3m
+kubectl -n "$NS" rollout status deployment/greenops-prometheus --timeout=3m
+kubectl -n "$NS" rollout status deployment/greenops-grafana    --timeout=3m
 kubectl -n "$NS" rollout status deployment/greenops-flink     --timeout=5m
 
 log "Cluster state:"
@@ -198,6 +207,10 @@ Useful next commands:
   # Open the dashboard
   kubectl port-forward -n $NS svc/greenops-dashboard 8000:8000 &
   open http://localhost:8000
+
+  # Open Grafana (anonymous viewer is enabled)
+  kubectl port-forward -n $NS svc/greenops-grafana 3000:3000 &
+  open http://localhost:3000
 
   # Open MinIO console (user=$MINIO_USER pass=$MINIO_PASSWORD)
   kubectl port-forward -n $NS svc/minio-console 9001:9001 &
