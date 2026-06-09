@@ -41,3 +41,29 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm run build
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check shell scripts
+        run: bash -n scripts/*.sh
+
+      - name: Check manifests parse
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 - <<'PY'
+          import pathlib, sys, yaml
+          failed = False
+          for path in sorted(pathlib.Path('k8s').rglob('*.yaml')):
+              try:
+                  list(yaml.safe_load_all(path.read_text()))
+              except yaml.YAMLError as exc:
+                  print(f"{path}: {exc}")
+                  failed = True
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Check dashboard JSON
+        run: python3 -c "import json; json.load(open('grafana/greenops-dashboard.json'))"
