@@ -1,0 +1,19 @@
+{{- if .Values.controller.create }}
+apiVersion: greenops.io/v1
+kind: GreenOpsController
+metadata:
+  name: {{ .Values.controller.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "greenops.labels" . | nindent 4 }}
+spec:
+  carbonThreshold: {{ .Values.controller.carbonThreshold }}
+  cooperativeSuspension: {{ .Values.controller.cooperativeSuspension }}
+  nodePowerWatts: {{ .Values.controller.nodePowerWatts }}
+  flinkJobName: {{ .Values.controller.flinkJobName }}
+  flinkNamespace: {{ include "greenops.flinkNamespace" . }}
+  telemetryEndpoint: {{ include "greenops.telemetryEndpoint" . | quote }}
+  flinkRestEndpoint: {{ include "greenops.flinkRestEndpoint" . | quote }}
+  savepointDirectory: {{ .Values.controller.savepointDirectory | quote }}
+  savepointTimeoutSeconds: {{ .Values.controller.savepointTimeoutSeconds }}
+{{- end }}
