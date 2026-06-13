@@ -1,0 +1,16 @@
+apiVersion: v2
+name: greenops
+description: Carbon aware suspension for stateful Apache Flink clusters
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - carbon
+  - sustainability
+  - flink
+  - operator
+home: https://github.com/yash/green-ops
+sources:
+  - https://github.com/yash/green-ops
+maintainers:
+  - name: yash
