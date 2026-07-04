@@ -249,6 +249,34 @@ class GreenOpsReconcilerTest {
             assertEquals("RESTORED", resource.getStatus().getSavepointPhase());
         }
 
+
+        @Test
+        @DisplayName("a Deployment left at zero by the old scaler is scaled back up")
+        void scalesUpWhenReplicasAreStaleAtZero() {
+            gridReturns("GREEN", 120);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+            when(flink.isScaledToZero(NS, JOB)).thenReturn(true);
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flink).scaleJobManager(NS, JOB, 1);
+            assertEquals("SCALE_UP_STALE_REPLICAS", resource.getStatus().getLastAction());
+        }
+
+        @Test
+        void leavesAHealthyRunningJobAlone() {
+            gridReturns("GREEN", 120);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+            when(flink.isScaledToZero(NS, JOB)).thenReturn(false);
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
+            assertEquals("ALREADY_RUNNING", resource.getStatus().getLastAction());
+        }
+
         @Test
         void doesNotResuspendAnAlreadySuspendedJob() {
             gridReturns("DIRTY", 850);

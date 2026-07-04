@@ -111,6 +111,18 @@ public class FlinkService {
 
     // --- Kubernetes scale --------------------------------------------------
 
+    public boolean isScaledToZero(String namespace, String flinkJobName) {
+        Deployment current = client.apps().deployments()
+                .inNamespace(namespace)
+                .withName(flinkJobName)
+                .get();
+        if (current == null || current.getSpec() == null) {
+            return false;
+        }
+        Integer replicas = current.getSpec().getReplicas();
+        return replicas != null && replicas == 0;
+    }
+
     public void scaleJobManager(String namespace, String flinkJobName, int replicas) {
         // Native-mode Flink: the operator creates only a JobManager Deployment
         // (named {flinkJobName}); TaskManagers are pods spawned directly by the JM.

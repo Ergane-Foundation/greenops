@@ -191,6 +191,13 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
 
         Optional<String> currentState = flinkDeploymentService.getJobState(namespace, name);
         if (currentState.isPresent() && FlinkDeploymentService.STATE_RUNNING.equalsIgnoreCase(currentState.get())) {
+            if (flinkService.isScaledToZero(namespace, name)) {
+                log.warn("[GreenOps] FlinkDeployment {}/{} wants to run but its Deployment sits at 0, scaling back up",
+                        namespace, name);
+                flinkService.scaleJobManager(namespace, name, 1);
+                status.setLastAction("SCALE_UP_STALE_REPLICAS");
+                return;
+            }
             log.info("[GreenOps] FlinkDeployment {}/{} already running", namespace, name);
             status.setLastAction("ALREADY_RUNNING");
             return;
