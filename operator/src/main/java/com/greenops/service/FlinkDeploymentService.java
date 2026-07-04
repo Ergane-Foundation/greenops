@@ -59,10 +59,10 @@ public class FlinkDeploymentService {
     public Optional<String> getLastSavepointPath(String namespace, String name) {
         return get(namespace, name).flatMap(resource -> {
             Map<String, Object> props = resource.getAdditionalProperties();
-            Object location = nested(props,
-                    "status", "jobStatus", "savepointInfo", "lastSavepoint", "location");
+            Object location = nested(props, "status", "jobStatus", "upgradeSavepointPath");
             if (location == null) {
-                location = nested(props, "status", "jobStatus", "upgradeSavepointPath");
+                location = nested(props,
+                        "status", "jobStatus", "savepointInfo", "lastSavepoint", "location");
             }
             if (location == null) {
                 return Optional.empty();
