@@ -13,14 +13,51 @@ data:
         static_configs:
           - targets: ['greenops-operator.greenops.svc.cluster.local:9400']
       - job_name: flink-operator
-        static_configs:
-          - targets: ['flink-operator-webhook-service.greenops.svc.cluster.local:9999']
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [greenops]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            regex: flink-kubernetes-operator
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            regex: "true"
+            action: keep
+          - source_labels: [__address__]
+            regex: '(.+?)(?::\d+)?'
+            target_label: __address__
+            replacement: '${1}:9999'
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: greenops-prometheus
   namespace: greenops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: greenops-prometheus
+  namespace: greenops
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: greenops-prometheus
+  namespace: greenops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: greenops-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: greenops-prometheus
+    namespace: greenops
 ---
 apiVersion: apps/v1
 kind: Deployment

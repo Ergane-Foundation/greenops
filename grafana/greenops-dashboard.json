@@ -11,7 +11,7 @@
       {
         "name": "controller",
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
         "query": "label_values(greenops_carbon_intensity_gco2_kwh, controller)",
         "refresh": 1,
         "includeAll": true,
@@ -25,7 +25,7 @@
       "type": "stat",
       "title": "Carbon avoided",
       "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "sum(greenops_carbon_avoided_grams_total{controller=~\"$controller\"})",
@@ -51,7 +51,7 @@
       "type": "stat",
       "title": "Time suspended",
       "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "sum(greenops_suspension_seconds_total{controller=~\"$controller\"})",
@@ -76,7 +76,7 @@
       "type": "stat",
       "title": "Carbon intensity",
       "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "max(greenops_carbon_intensity_gco2_kwh{controller=~\"$controller\"})",
@@ -109,7 +109,7 @@
       "type": "stat",
       "title": "Job state",
       "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "max(greenops_job_suspended{controller=~\"$controller\"})",
@@ -144,7 +144,7 @@
       "title": "Carbon intensity against suspension",
       "description": "Grid intensity, the configured threshold, and when the job was suspended.",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "greenops_carbon_intensity_gco2_kwh{controller=~\"$controller\"}",
@@ -197,7 +197,7 @@
       "type": "timeseries",
       "title": "Carbon avoided over time",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "sum(greenops_carbon_avoided_grams_total{controller=~\"$controller\"})",
@@ -222,7 +222,7 @@
       "type": "timeseries",
       "title": "Savepoint duration",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(greenops_savepoint_duration_seconds_bucket{controller=~\"$controller\"}[10m])) by (le))",
@@ -250,7 +250,7 @@
       "type": "timeseries",
       "title": "Reconcile actions",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "sum by (action) (rate(greenops_reconcile_total{controller=~\"$controller\"}[5m]))",
@@ -274,7 +274,7 @@
       "type": "piechart",
       "title": "Savepoint outcomes",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
       "targets": [
         {
           "expr": "sum by (result) (greenops_savepoint_total{controller=~\"$controller\"})",
