@@ -9,6 +9,7 @@ public class GreenOpsStatus {
     private String lastSavepointPath;
     private String lastSavepointAt;
     private String lastError;
+    private String decisionReason;
 
     public String getGridStatus() { return gridStatus; }
     public void setGridStatus(String gridStatus) { this.gridStatus = gridStatus; }
@@ -33,4 +34,7 @@ public class GreenOpsStatus {
 
     public String getLastError() { return lastError; }
     public void setLastError(String lastError) { this.lastError = lastError; }
+
+    public String getDecisionReason() { return decisionReason; }
+    public void setDecisionReason(String decisionReason) { this.decisionReason = decisionReason; }
 }

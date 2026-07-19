@@ -2,7 +2,12 @@ package com.greenops.controller;
 
 import com.greenops.model.GreenOpsResource;
 import com.greenops.model.GreenOpsSpec;
+import com.greenops.scheduling.PlanExecutor;
+import com.greenops.scheduling.SchedulingContext;
+import com.greenops.scheduling.SchedulingPolicy;
+import com.greenops.scheduling.SuspensionPlan;
 import com.greenops.service.FlinkDeploymentService;
+import com.greenops.service.LegacySavepointSuspender;
 import com.greenops.service.FlinkService;
 import com.greenops.service.SavepointResult;
 import com.greenops.service.TelemetryService;
@@ -17,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -212,6 +218,52 @@ class GreenOpsReconcilerTest {
         reconciler.reconcile(resource, null);
 
         verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
+    }
+
+    @Test
+    @DisplayName("the reconciler asks the policy rather than deciding for itself")
+    void delegatesTheDecisionToThePolicy() {
+        gridReturns("DIRTY", 850);
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+        when(flinkDeployment.suspend(NS, JOB)).thenReturn(true);
+
+        SchedulingPolicy alwaysHold = new SchedulingPolicy() {
+            @Override
+            public String name() {
+                return "always-hold";
+            }
+
+            @Override
+            public SuspensionPlan decide(SchedulingContext context) {
+                return SuspensionPlan.hold("policy said so");
+            }
+        };
+
+        GreenOpsReconciler holding = new GreenOpsReconciler(
+                telemetry, flinkDeployment,
+                new PlanExecutor(flink, flinkDeployment),
+                new LegacySavepointSuspender(flink),
+                alwaysHold);
+
+        GreenOpsResource resource = resource(cooperativeSpec());
+        holding.reconcile(resource, null);
+
+        verify(flinkDeployment, never()).suspend(anyString(), anyString());
+        assertEquals("HOLD", resource.getStatus().getLastAction());
+        assertEquals("policy said so", resource.getStatus().getDecisionReason());
+    }
+
+    @Test
+    void recordsWhyTheDecisionWasMade() {
+        gridReturns("DIRTY", 850);
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+        when(flinkDeployment.suspend(NS, JOB)).thenReturn(true);
+
+        GreenOpsResource resource = resource(cooperativeSpec());
+        reconciler.reconcile(resource, null);
+
+        assertNotNull(resource.getStatus().getDecisionReason());
+        assertTrue(resource.getStatus().getDecisionReason().contains("850"));
     }
 
     @Nested

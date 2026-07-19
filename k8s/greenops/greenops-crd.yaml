@@ -73,6 +73,8 @@ spec:
                   type: string
                 lastError:
                   type: string
+                decisionReason:
+                  type: string
       additionalPrinterColumns:
         - name: Grid
           type: string
@@ -86,6 +88,10 @@ spec:
         - name: Savepoint
           type: string
           jsonPath: .status.savepointPhase
+        - name: Reason
+          type: string
+          priority: 1
+          jsonPath: .status.decisionReason
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp
