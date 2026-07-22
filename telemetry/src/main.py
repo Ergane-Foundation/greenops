@@ -9,7 +9,6 @@ from forecast import (
     FORECAST_HORIZON_HOURS,
     FORECAST_RESOLUTION_MINUTES,
     parse_electricity_maps,
-    shifted_forecast,
     simulated_forecast,
 )
 
@@ -44,24 +43,17 @@ async def get_status(simulate: Optional[str] = Query(None)):
         return {**current_state, "grid_status": "GREEN", "carbon_intensity": 120}
     return current_state
 
+def _offset_points(offset_gco2: int):
+    return [{**p, "carbon_intensity": max(0, p["carbon_intensity"] + offset_gco2)}
+            for p in forecast_state["points"]]
+
+
 @app.get("/telemetry/forecast")
 async def get_forecast(simulate: Optional[str] = Query(None)):
     if simulate == "dirty":
-        return {**forecast_state,
-                "source": "simulated",
-                "last_updated": datetime.now(timezone.utc).isoformat(),
-                "points": shifted_forecast(ZONE, 450)}
+        return {**forecast_state, "points": _offset_points(450)}
     if simulate == "clean":
-        return {**forecast_state,
-                "source": "simulated",
-                "last_updated": datetime.now(timezone.utc).isoformat(),
-                "points": shifted_forecast(ZONE, -200)}
-
-    if not forecast_state["points"]:
-        return {**forecast_state,
-                "source": "simulated",
-                "last_updated": datetime.now(timezone.utc).isoformat(),
-                "points": simulated_forecast(ZONE)}
+        return {**forecast_state, "points": _offset_points(-200)}
     return forecast_state
 
 @app.get("/health")
@@ -119,5 +111,8 @@ async def poll_forecast():
 
 @app.on_event("startup")
 async def startup_event():
+    forecast_state["points"] = simulated_forecast(ZONE)
+    forecast_state["source"] = "simulated"
+    forecast_state["last_updated"] = datetime.now(timezone.utc).isoformat()
     asyncio.create_task(poll_carbon_intensity())
     asyncio.create_task(poll_forecast())
