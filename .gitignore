@@ -11,6 +11,10 @@ operator/target/
 .project
 .classpath
 
+# Python
+__pycache__/
+*.pyc
+
 # OS
 .DS_Store
 
