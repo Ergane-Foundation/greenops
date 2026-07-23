@@ -101,9 +101,28 @@ public final class CarbonForecast {
     }
 
     public Optional<CarbonWindow> currentWindowAbove(int threshold, Instant now) {
-        return intensityAt(now)
-                .filter(intensity -> intensity > threshold)
-                .flatMap(intensity -> nextWindowAbove(threshold, firstPointAtOrBefore(now)));
+        Optional<Integer> currentIntensity = intensityAt(now);
+        if (currentIntensity.isEmpty() || currentIntensity.get() <= threshold) {
+            return Optional.empty();
+        }
+        return nextWindowAbove(threshold, windowStartAtOrBefore(threshold, now));
+    }
+
+    private Instant windowStartAtOrBefore(int threshold, Instant moment) {
+        Instant start = moment;
+        for (ForecastPoint point : points) {
+            if (point.getAt().isAfter(moment)) {
+                break;
+            }
+            if (point.getCarbonIntensity() > threshold) {
+                if (start.isAfter(point.getAt())) {
+                    start = point.getAt();
+                }
+            } else {
+                start = moment;
+            }
+        }
+        return start;
     }
 
     public Optional<Instant> nextDropBelow(int threshold, Instant from) {
@@ -134,15 +153,4 @@ public final class CarbonForecast {
         return count == 0 ? 0 : (double) sum / count;
     }
 
-    private Instant firstPointAtOrBefore(Instant moment) {
-        Instant best = moment;
-        for (ForecastPoint point : points) {
-            if (!point.getAt().isAfter(moment)) {
-                best = point.getAt();
-            } else {
-                break;
-            }
-        }
-        return best;
-    }
 }

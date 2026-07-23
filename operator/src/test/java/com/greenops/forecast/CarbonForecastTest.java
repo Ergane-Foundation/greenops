@@ -97,6 +97,14 @@ class CarbonForecastTest {
     }
 
     @Test
+    void reportsTheCurrentWindowWhenAlreadyDirty() {
+        CarbonForecast forecast = of(500, 600, 550, 200);
+        Optional<CarbonWindow> window = forecast.currentWindowAbove(400, T0.plus(Duration.ofMinutes(30)));
+        assertTrue(window.isPresent());
+        assertEquals(Duration.ofMinutes(90), window.orElseThrow().getDuration());
+    }
+
+    @Test
     void reportsNoCurrentWindowWhenClean() {
         CarbonForecast forecast = of(100, 200, 500);
         assertFalse(forecast.currentWindowAbove(400, T0).isPresent());
