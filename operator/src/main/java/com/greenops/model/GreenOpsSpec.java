@@ -5,6 +5,7 @@ public class GreenOpsSpec {
     private String flinkJobName;
     private String flinkNamespace;
     private String telemetryEndpoint;
+    private String forecastEndpoint;
     private String flinkRestEndpoint;
     private String savepointDirectory = "s3://greenops/savepoints";
     private int savepointTimeoutSeconds = 300;
@@ -23,6 +24,9 @@ public class GreenOpsSpec {
 
     public String getTelemetryEndpoint() { return telemetryEndpoint; }
     public void setTelemetryEndpoint(String telemetryEndpoint) { this.telemetryEndpoint = telemetryEndpoint; }
+
+    public String getForecastEndpoint() { return forecastEndpoint; }
+    public void setForecastEndpoint(String forecastEndpoint) { this.forecastEndpoint = forecastEndpoint; }
 
     public String getFlinkRestEndpoint() { return flinkRestEndpoint; }
     public void setFlinkRestEndpoint(String flinkRestEndpoint) { this.flinkRestEndpoint = flinkRestEndpoint; }

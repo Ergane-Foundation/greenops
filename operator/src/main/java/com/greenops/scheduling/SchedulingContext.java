@@ -1,5 +1,7 @@
 package com.greenops.scheduling;
 
+import com.greenops.forecast.CarbonForecast;
+
 import java.time.Instant;
 
 public final class SchedulingContext {
@@ -11,6 +13,7 @@ public final class SchedulingContext {
     private final boolean currentlySuspended;
     private final String lastSavepointPath;
     private final Instant evaluatedAt;
+    private final CarbonForecast forecast;
 
     private SchedulingContext(Builder builder) {
         this.jobName = builder.jobName;
@@ -20,6 +23,7 @@ public final class SchedulingContext {
         this.currentlySuspended = builder.currentlySuspended;
         this.lastSavepointPath = builder.lastSavepointPath;
         this.evaluatedAt = builder.evaluatedAt == null ? Instant.now() : builder.evaluatedAt;
+        this.forecast = builder.forecast == null ? CarbonForecast.empty() : builder.forecast;
     }
 
     public static Builder builder() {
@@ -54,6 +58,14 @@ public final class SchedulingContext {
         return evaluatedAt;
     }
 
+    public CarbonForecast getForecast() {
+        return forecast;
+    }
+
+    public boolean hasForecast() {
+        return !forecast.isEmpty();
+    }
+
     public boolean isGridDirty() {
         if ("DIRTY".equalsIgnoreCase(gridStatus)) {
             return true;
@@ -72,6 +84,7 @@ public final class SchedulingContext {
         private boolean currentlySuspended;
         private String lastSavepointPath;
         private Instant evaluatedAt;
+        private CarbonForecast forecast;
 
         public Builder jobName(String jobName) {
             this.jobName = jobName;
@@ -105,6 +118,11 @@ public final class SchedulingContext {
 
         public Builder evaluatedAt(Instant evaluatedAt) {
             this.evaluatedAt = evaluatedAt;
+            return this;
+        }
+
+        public Builder forecast(CarbonForecast forecast) {
+            this.forecast = forecast;
             return this;
         }
 

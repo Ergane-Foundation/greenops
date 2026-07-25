@@ -9,6 +9,7 @@ spec:
   flinkNamespace: greenops
   cooperativeSuspension: true
   telemetryEndpoint: "http://greenops-telemetry.greenops.svc.cluster.local:8080/telemetry/status"
+  forecastEndpoint: "http://greenops-telemetry.greenops.svc.cluster.local:8080/telemetry/forecast"
   flinkRestEndpoint: "http://greenops-flink-rest.greenops.svc.cluster.local:8081"
   savepointDirectory: "s3://greenops/savepoints"
   savepointTimeoutSeconds: 300

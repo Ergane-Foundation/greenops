@@ -10,6 +10,11 @@ public class GreenOpsStatus {
     private String lastSavepointAt;
     private String lastError;
     private String decisionReason;
+    private String forecastSource;
+    private Integer forecastHorizonHours;
+    private String nextDirtyWindowStart;
+    private String nextDirtyWindowEnd;
+    private Integer nextDirtyWindowPeak;
 
     public String getGridStatus() { return gridStatus; }
     public void setGridStatus(String gridStatus) { this.gridStatus = gridStatus; }
@@ -37,4 +42,19 @@ public class GreenOpsStatus {
 
     public String getDecisionReason() { return decisionReason; }
     public void setDecisionReason(String decisionReason) { this.decisionReason = decisionReason; }
+
+    public String getForecastSource() { return forecastSource; }
+    public void setForecastSource(String forecastSource) { this.forecastSource = forecastSource; }
+
+    public Integer getForecastHorizonHours() { return forecastHorizonHours; }
+    public void setForecastHorizonHours(Integer forecastHorizonHours) { this.forecastHorizonHours = forecastHorizonHours; }
+
+    public String getNextDirtyWindowStart() { return nextDirtyWindowStart; }
+    public void setNextDirtyWindowStart(String nextDirtyWindowStart) { this.nextDirtyWindowStart = nextDirtyWindowStart; }
+
+    public String getNextDirtyWindowEnd() { return nextDirtyWindowEnd; }
+    public void setNextDirtyWindowEnd(String nextDirtyWindowEnd) { this.nextDirtyWindowEnd = nextDirtyWindowEnd; }
+
+    public Integer getNextDirtyWindowPeak() { return nextDirtyWindowPeak; }
+    public void setNextDirtyWindowPeak(Integer nextDirtyWindowPeak) { this.nextDirtyWindowPeak = nextDirtyWindowPeak; }
 }

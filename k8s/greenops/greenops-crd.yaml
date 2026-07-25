@@ -34,6 +34,8 @@ spec:
                   type: string
                 telemetryEndpoint:
                   type: string
+                forecastEndpoint:
+                  type: string
                 cooperativeSuspension:
                   type: boolean
                   default: true
@@ -75,6 +77,16 @@ spec:
                   type: string
                 decisionReason:
                   type: string
+                forecastSource:
+                  type: string
+                forecastHorizonHours:
+                  type: integer
+                nextDirtyWindowStart:
+                  type: string
+                nextDirtyWindowEnd:
+                  type: string
+                nextDirtyWindowPeak:
+                  type: integer
       additionalPrinterColumns:
         - name: Grid
           type: string
