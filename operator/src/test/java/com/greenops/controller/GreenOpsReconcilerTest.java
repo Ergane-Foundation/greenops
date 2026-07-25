@@ -2,6 +2,7 @@ package com.greenops.controller;
 
 import com.greenops.model.GreenOpsResource;
 import com.greenops.model.GreenOpsSpec;
+import com.greenops.forecast.ForecastService;
 import com.greenops.scheduling.PlanExecutor;
 import com.greenops.scheduling.SchedulingContext;
 import com.greenops.scheduling.SchedulingPolicy;
@@ -240,7 +241,7 @@ class GreenOpsReconcilerTest {
         };
 
         GreenOpsReconciler holding = new GreenOpsReconciler(
-                telemetry, flinkDeployment,
+                telemetry, new ForecastService(), flinkDeployment,
                 new PlanExecutor(flink, flinkDeployment),
                 new LegacySavepointSuspender(flink),
                 alwaysHold);
