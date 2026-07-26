@@ -5,13 +5,19 @@
   "version": 1,
   "editable": true,
   "refresh": "30s",
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "templating": {
     "list": [
       {
         "name": "controller",
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "greenops-prometheus"
+        },
         "query": "label_values(greenops_carbon_intensity_gco2_kwh, controller)",
         "refresh": 1,
         "includeAll": true,
@@ -24,8 +30,16 @@
       "id": 1,
       "type": "stat",
       "title": "Carbon avoided",
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "sum(greenops_carbon_avoided_grams_total{controller=~\"$controller\"})",
@@ -36,12 +50,19 @@
         "defaults": {
           "unit": "mass_g",
           "decimals": 1,
-          "color": { "mode": "fixed", "fixedColor": "green" }
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "graphMode": "area",
         "textMode": "auto"
       }
@@ -50,8 +71,16 @@
       "id": 2,
       "type": "stat",
       "title": "Time suspended",
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "sum(greenops_suspension_seconds_total{controller=~\"$controller\"})",
@@ -62,12 +91,19 @@
         "defaults": {
           "unit": "s",
           "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "blue" }
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "graphMode": "area"
       }
     },
@@ -75,8 +111,16 @@
       "id": 3,
       "type": "stat",
       "title": "Carbon intensity",
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "max(greenops_carbon_intensity_gco2_kwh{controller=~\"$controller\"})",
@@ -90,17 +134,32 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 300 },
-              { "color": "red", "value": 400 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 300
+              },
+              {
+                "color": "red",
+                "value": 400
+              }
             ]
           },
-          "color": { "mode": "thresholds" }
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "graphMode": "area"
       }
     },
@@ -108,8 +167,16 @@
       "id": 4,
       "type": "stat",
       "title": "Job state",
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "max(greenops_job_suspended{controller=~\"$controller\"})",
@@ -122,18 +189,40 @@
             {
               "type": "value",
               "options": {
-                "0": { "text": "Running", "color": "green", "index": 0 },
-                "1": { "text": "Suspended", "color": "orange", "index": 1 }
+                "0": {
+                  "text": "Running",
+                  "color": "green",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Suspended",
+                  "color": "orange",
+                  "index": 1
+                }
               }
             }
           ],
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "graphMode": "none",
         "textMode": "value"
       }
@@ -143,8 +232,16 @@
       "type": "timeseries",
       "title": "Carbon intensity against suspension",
       "description": "Grid intensity, the configured threshold, and when the job was suspended.",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "greenops_carbon_intensity_gco2_kwh{controller=~\"$controller\"}",
@@ -171,33 +268,80 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "threshold" },
+            "matcher": {
+              "id": "byName",
+              "options": "threshold"
+            },
             "properties": [
-              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "suspended" },
+            "matcher": {
+              "id": "byName",
+              "options": "suspended"
+            },
             "properties": [
-              { "id": "custom.drawStyle", "value": "bars" },
-              { "id": "custom.fillOpacity", "value": 25 },
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "none" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
       "id": 6,
       "type": "timeseries",
       "title": "Carbon avoided over time",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "sum(greenops_carbon_avoided_grams_total{controller=~\"$controller\"})",
@@ -207,22 +351,43 @@
       "fieldConfig": {
         "defaults": {
           "unit": "mass_g",
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" },
-          "color": { "mode": "fixed", "fixedColor": "green" }
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
       }
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "Savepoint duration",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(greenops_savepoint_duration_seconds_bucket{controller=~\"$controller\"}[10m])) by (le))",
@@ -236,21 +401,39 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 0, "showPoints": "never" }
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       }
     },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Reconcile actions",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "sum by (action) (rate(greenops_reconcile_total{controller=~\"$controller\"}[5m]))",
@@ -260,21 +443,42 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ops",
-          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "stacking": { "mode": "normal" } }
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal"
+            }
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       }
     },
     {
       "id": 9,
       "type": "piechart",
       "title": "Savepoint outcomes",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
-      "datasource": { "type": "prometheus", "uid": "greenops-prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
       "targets": [
         {
           "expr": "sum by (result) (greenops_savepoint_total{controller=~\"$controller\"})",
@@ -282,12 +486,223 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short" },
+        "defaults": {
+          "unit": "short"
+        },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "right" },
-        "reduceOptions": { "calcs": ["lastNotNull"] }
+        "legend": {
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Forecast ahead of the grid",
+      "description": "Predicted carbon intensity at several horizons against the live reading and the threshold.",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
+      "targets": [
+        {
+          "expr": "greenops_carbon_intensity_gco2_kwh{controller=~\"$controller\"}",
+          "legendFormat": "actual"
+        },
+        {
+          "expr": "greenops_carbon_threshold_gco2_kwh{controller=~\"$controller\"}",
+          "legendFormat": "threshold"
+        },
+        {
+          "expr": "greenops_forecast_intensity_gco2_kwh{controller=~\"$controller\", hours_ahead=\"1\"}",
+          "legendFormat": "+1h"
+        },
+        {
+          "expr": "greenops_forecast_intensity_gco2_kwh{controller=~\"$controller\", hours_ahead=\"6\"}",
+          "legendFormat": "+6h"
+        },
+        {
+          "expr": "greenops_forecast_intensity_gco2_kwh{controller=~\"$controller\", hours_ahead=\"12\"}",
+          "legendFormat": "+12h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "threshold"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "actual"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Next dirty window",
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
+      "targets": [
+        {
+          "expr": "greenops_forecast_dirty_window_starts_in_seconds{controller=~\"$controller\"}",
+          "legendFormat": "starts in"
+        },
+        {
+          "expr": "greenops_forecast_dirty_window_duration_seconds{controller=~\"$controller\"}",
+          "legendFormat": "lasts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Window peak",
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "greenops-prometheus"
+      },
+      "targets": [
+        {
+          "expr": "greenops_forecast_dirty_window_peak_gco2_kwh{controller=~\"$controller\"}",
+          "legendFormat": "peak"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 400
+              },
+              {
+                "color": "red",
+                "value": 600
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area"
       }
     }
   ]
