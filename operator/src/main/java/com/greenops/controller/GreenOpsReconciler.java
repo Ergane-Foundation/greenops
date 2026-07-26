@@ -33,6 +33,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
 
     private static final Logger log = LoggerFactory.getLogger(GreenOpsReconciler.class);
     private static final long RECONCILE_INTERVAL_SECONDS = 60;
+    private static final long[] FORECAST_SAMPLE_HOURS = {1, 3, 6, 12, 24};
 
     private final TelemetryService telemetryService;
     private final ForecastService forecastService;
@@ -133,6 +134,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
 
     private void recordForecast(String controller, GreenOpsSpec spec, GreenOpsStatus status, CarbonForecast forecast) {
         if (forecast.isEmpty()) {
+            GreenOpsMetrics.clearForecastWindow(controller);
             status.setForecastSource(null);
             status.setForecastHorizonHours(null);
             status.setNextDirtyWindowStart(null);
@@ -145,6 +147,10 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         status.setForecastHorizonHours((int) forecast.getHorizon().toHours());
 
         Instant now = Instant.now();
+        for (long hoursAhead : FORECAST_SAMPLE_HOURS) {
+            forecast.intensityAt(now.plus(Duration.ofHours(hoursAhead)))
+                    .ifPresent(intensity -> GreenOpsMetrics.recordForecastPoint(controller, hoursAhead, intensity));
+        }
         Optional<CarbonWindow> window = forecast.currentWindowAbove(spec.getCarbonThreshold(), now);
         if (window.isEmpty()) {
             window = forecast.nextWindowAbove(spec.getCarbonThreshold(), now);
@@ -155,6 +161,9 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
             status.setNextDirtyWindowStart(w.getStart() == null ? null : w.getStart().toString());
             status.setNextDirtyWindowEnd(w.getEnd() == null ? null : w.getEnd().toString());
             status.setNextDirtyWindowPeak(w.getPeakIntensity());
+            double startsIn = Math.max(0, w.startsIn(now).toSeconds());
+            double duration = w.getEnd() == null ? 0 : w.getDuration().toSeconds();
+            GreenOpsMetrics.recordForecastWindow(controller, startsIn, duration, w.getPeakIntensity());
             log.info("[GreenOps] Forecast {} over {}h, next dirty window {} to {} peaking at {}",
                     forecast.getSource(), forecast.getHorizon().toHours(),
                     w.getStart(), w.getEnd(), w.getPeakIntensity());
@@ -162,6 +171,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
             status.setNextDirtyWindowStart(null);
             status.setNextDirtyWindowEnd(null);
             status.setNextDirtyWindowPeak(null);
+            GreenOpsMetrics.clearForecastWindow(controller);
             log.info("[GreenOps] Forecast {} over {}h, nothing above threshold ahead",
                     forecast.getSource(), forecast.getHorizon().toHours());
         }

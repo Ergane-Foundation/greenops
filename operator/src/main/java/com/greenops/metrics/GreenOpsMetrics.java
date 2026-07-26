@@ -71,6 +71,30 @@ public final class GreenOpsMetrics {
             .labelNames("controller")
             .register();
 
+    private static final Gauge FORECAST_INTENSITY = Gauge.builder()
+            .name("greenops_forecast_intensity_gco2_kwh")
+            .help("Forecast carbon intensity at a number of hours ahead")
+            .labelNames("controller", "hours_ahead")
+            .register();
+
+    private static final Gauge FORECAST_WINDOW_STARTS_IN = Gauge.builder()
+            .name("greenops_forecast_dirty_window_starts_in_seconds")
+            .help("Seconds until the next forecast window above the threshold begins")
+            .labelNames("controller")
+            .register();
+
+    private static final Gauge FORECAST_WINDOW_DURATION = Gauge.builder()
+            .name("greenops_forecast_dirty_window_duration_seconds")
+            .help("Length of the next forecast window above the threshold")
+            .labelNames("controller")
+            .register();
+
+    private static final Gauge FORECAST_WINDOW_PEAK = Gauge.builder()
+            .name("greenops_forecast_dirty_window_peak_gco2_kwh")
+            .help("Peak carbon intensity within the next forecast window")
+            .labelNames("controller")
+            .register();
+
     private static final Map<String, Instant> SUSPENDED_SINCE = new ConcurrentHashMap<>();
     private static final Map<String, Double> INTENSITY_AT_SUSPEND = new ConcurrentHashMap<>();
 
@@ -101,6 +125,25 @@ public final class GreenOpsMetrics {
         CARBON_INTENSITY.labelValues(controller, zone == null ? "unknown" : zone).set(intensity);
         CARBON_THRESHOLD.labelValues(controller).set(threshold);
         GRID_DIRTY.labelValues(controller).set(dirty ? 1 : 0);
+    }
+
+    public static void recordForecastPoint(String controller, long hoursAhead, int intensity) {
+        FORECAST_INTENSITY.labelValues(controller, String.valueOf(hoursAhead)).set(intensity);
+    }
+
+    public static void recordForecastWindow(String controller,
+                                            double startsInSeconds,
+                                            double durationSeconds,
+                                            int peakIntensity) {
+        FORECAST_WINDOW_STARTS_IN.labelValues(controller).set(startsInSeconds);
+        FORECAST_WINDOW_DURATION.labelValues(controller).set(durationSeconds);
+        FORECAST_WINDOW_PEAK.labelValues(controller).set(peakIntensity);
+    }
+
+    public static void clearForecastWindow(String controller) {
+        FORECAST_WINDOW_STARTS_IN.labelValues(controller).set(-1);
+        FORECAST_WINDOW_DURATION.labelValues(controller).set(0);
+        FORECAST_WINDOW_PEAK.labelValues(controller).set(0);
     }
 
     public static void recordAction(String controller, String action) {
