@@ -48,6 +48,23 @@ spec:
                 nodePowerWatts:
                   type: number
                   default: 250
+                schedulingPolicy:
+                  type: string
+                  enum: [threshold, forecast, optimising]
+                  default: threshold
+                costPredictor:
+                  type: string
+                  enum: [static, observed, regression]
+                  default: static
+                assumedSavepointSeconds:
+                  type: integer
+                  default: 60
+                assumedRestartSeconds:
+                  type: integer
+                  default: 120
+                breakEvenMultiplier:
+                  type: number
+                  default: 2.0
                 flinkRestEndpoint:
                   type: string
                 savepointDirectory:

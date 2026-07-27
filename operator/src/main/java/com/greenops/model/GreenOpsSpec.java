@@ -12,6 +12,11 @@ public class GreenOpsSpec {
 
     private boolean cooperativeSuspension = true;
     private double nodePowerWatts = 250.0;
+    private String schedulingPolicy = "threshold";
+    private String costPredictor = "static";
+    private int assumedSavepointSeconds = 60;
+    private int assumedRestartSeconds = 120;
+    private double breakEvenMultiplier = 2.0;
 
     public int getCarbonThreshold() { return carbonThreshold; }
     public void setCarbonThreshold(int carbonThreshold) { this.carbonThreshold = carbonThreshold; }
@@ -42,4 +47,19 @@ public class GreenOpsSpec {
 
     public double getNodePowerWatts() { return nodePowerWatts; }
     public void setNodePowerWatts(double nodePowerWatts) { this.nodePowerWatts = nodePowerWatts; }
+
+    public String getSchedulingPolicy() { return schedulingPolicy; }
+    public void setSchedulingPolicy(String schedulingPolicy) { this.schedulingPolicy = schedulingPolicy; }
+
+    public String getCostPredictor() { return costPredictor; }
+    public void setCostPredictor(String costPredictor) { this.costPredictor = costPredictor; }
+
+    public int getAssumedSavepointSeconds() { return assumedSavepointSeconds; }
+    public void setAssumedSavepointSeconds(int assumedSavepointSeconds) { this.assumedSavepointSeconds = assumedSavepointSeconds; }
+
+    public int getAssumedRestartSeconds() { return assumedRestartSeconds; }
+    public void setAssumedRestartSeconds(int assumedRestartSeconds) { this.assumedRestartSeconds = assumedRestartSeconds; }
+
+    public double getBreakEvenMultiplier() { return breakEvenMultiplier; }
+    public void setBreakEvenMultiplier(double breakEvenMultiplier) { this.breakEvenMultiplier = breakEvenMultiplier; }
 }
