@@ -10,6 +10,7 @@ public class GreenOpsStatus {
     private String lastSavepointAt;
     private String lastError;
     private String decisionReason;
+    private String activePolicy;
     private String forecastSource;
     private Integer forecastHorizonHours;
     private String nextDirtyWindowStart;
@@ -42,6 +43,9 @@ public class GreenOpsStatus {
 
     public String getDecisionReason() { return decisionReason; }
     public void setDecisionReason(String decisionReason) { this.decisionReason = decisionReason; }
+
+    public String getActivePolicy() { return activePolicy; }
+    public void setActivePolicy(String activePolicy) { this.activePolicy = activePolicy; }
 
     public String getForecastSource() { return forecastSource; }
     public void setForecastSource(String forecastSource) { this.forecastSource = forecastSource; }

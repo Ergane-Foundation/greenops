@@ -9,6 +9,7 @@ import com.greenops.model.GreenOpsSpec;
 import com.greenops.model.GreenOpsStatus;
 import com.greenops.scheduling.PlanExecutor;
 import com.greenops.scheduling.SchedulingContext;
+import com.greenops.scheduling.SchedulingPolicies;
 import com.greenops.scheduling.SchedulingPolicy;
 import com.greenops.scheduling.SuspensionPlan;
 import com.greenops.scheduling.ThresholdPolicy;
@@ -40,7 +41,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
     private final FlinkDeploymentService flinkDeploymentService;
     private final PlanExecutor planExecutor;
     private final LegacySavepointSuspender legacySuspender;
-    private final SchedulingPolicy policy;
+    private final SchedulingPolicy policyOverride;
 
     public GreenOpsReconciler(KubernetesClient client) {
         this(new TelemetryService(),
@@ -54,7 +55,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         this(telemetryService, new ForecastService(), flinkDeploymentService,
                 new PlanExecutor(flinkService, flinkDeploymentService),
                 new LegacySavepointSuspender(flinkService),
-                new ThresholdPolicy());
+                null);
     }
 
     GreenOpsReconciler(TelemetryService telemetryService,
@@ -68,7 +69,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         this.flinkDeploymentService = flinkDeploymentService;
         this.planExecutor = planExecutor;
         this.legacySuspender = legacySuspender;
-        this.policy = policy;
+        this.policyOverride = policy;
     }
 
     @Override
@@ -101,8 +102,12 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         log.info("[GreenOps] Grid status: {} | Carbon: {} gCO2/kWh | Threshold: {}",
                 gridStatus.getStatus(), gridStatus.getCarbonIntensity(), spec.getCarbonThreshold());
 
+        SchedulingPolicy policy = policyOverride != null
+                ? policyOverride
+                : SchedulingPolicies.fromSpec(spec);
         SuspensionPlan plan = policy.decide(schedulingContext);
         log.info("[GreenOps] Policy {} decided {}", policy.name(), plan);
+        status.setActivePolicy(policy.name());
         status.setDecisionReason(plan.getReason());
 
         if (spec.isCooperativeSuspension()) {

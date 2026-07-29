@@ -94,6 +94,8 @@ spec:
                   type: string
                 decisionReason:
                   type: string
+                activePolicy:
+                  type: string
                 forecastSource:
                   type: string
                 forecastHorizonHours:
@@ -117,6 +119,10 @@ spec:
         - name: Savepoint
           type: string
           jsonPath: .status.savepointPhase
+        - name: Policy
+          type: string
+          priority: 1
+          jsonPath: .status.activePolicy
         - name: Reason
           type: string
           priority: 1
