@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -46,6 +47,19 @@ public class FlinkDeploymentService {
         } catch (Exception e) {
             log.warn("Could not read FlinkDeployment {}/{}: {}", namespace, name, e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    public List<GenericKubernetesResource> list(String namespace, Map<String, String> labelSelector) {
+        try {
+            var resources = client.genericKubernetesResources(FLINK_DEPLOYMENT_CONTEXT).inNamespace(namespace);
+            if (labelSelector == null || labelSelector.isEmpty()) {
+                return resources.list().getItems();
+            }
+            return resources.withLabels(labelSelector).list().getItems();
+        } catch (Exception e) {
+            log.warn("Could not list FlinkDeployments in {}: {}", namespace, e.getMessage());
+            return List.of();
         }
     }
 

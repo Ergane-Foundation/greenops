@@ -1,8 +1,10 @@
 package com.greenops.model;
 
 public class GreenOpsSpec {
+
     private int carbonThreshold = 400;
     private String flinkJobName;
+    private java.util.Map<String, String> jobSelector;
     private String flinkNamespace;
     private String telemetryEndpoint;
     private String forecastEndpoint;
@@ -23,6 +25,9 @@ public class GreenOpsSpec {
 
     public String getFlinkJobName() { return flinkJobName; }
     public void setFlinkJobName(String flinkJobName) { this.flinkJobName = flinkJobName; }
+
+    public java.util.Map<String, String> getJobSelector() { return jobSelector; }
+    public void setJobSelector(java.util.Map<String, String> jobSelector) { this.jobSelector = jobSelector; }
 
     public String getFlinkNamespace() { return flinkNamespace; }
     public void setFlinkNamespace(String flinkNamespace) { this.flinkNamespace = flinkNamespace; }

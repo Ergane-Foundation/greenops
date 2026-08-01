@@ -30,6 +30,10 @@ spec:
                   default: 400
                 flinkJobName:
                   type: string
+                jobSelector:
+                  type: object
+                  additionalProperties:
+                    type: string
                 flinkNamespace:
                   type: string
                 telemetryEndpoint:
