@@ -100,6 +100,23 @@ spec:
                   type: string
                 activePolicy:
                   type: string
+                managedJobCount:
+                  type: integer
+                jobs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      state:
+                        type: string
+                      priority:
+                        type: integer
+                      lastAction:
+                        type: string
+                      lastSavepointPath:
+                        type: string
                 forecastSource:
                   type: string
                 forecastHorizonHours:
@@ -123,6 +140,9 @@ spec:
         - name: Savepoint
           type: string
           jsonPath: .status.savepointPhase
+        - name: Jobs
+          type: integer
+          jsonPath: .status.managedJobCount
         - name: Policy
           type: string
           priority: 1

@@ -3,6 +3,9 @@ package com.greenops.controller;
 import com.greenops.forecast.CarbonForecast;
 import com.greenops.forecast.CarbonWindow;
 import com.greenops.forecast.ForecastService;
+import com.greenops.inventory.JobInventory;
+import com.greenops.inventory.ManagedJob;
+import com.greenops.model.ManagedJobStatus;
 import com.greenops.metrics.GreenOpsMetrics;
 import com.greenops.model.GreenOpsResource;
 import com.greenops.model.GreenOpsSpec;
@@ -27,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @ControllerConfiguration
@@ -39,6 +44,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
     private final TelemetryService telemetryService;
     private final ForecastService forecastService;
     private final FlinkDeploymentService flinkDeploymentService;
+    private final JobInventory jobInventory;
     private final PlanExecutor planExecutor;
     private final LegacySavepointSuspender legacySuspender;
     private final SchedulingPolicy policyOverride;
@@ -67,6 +73,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         this.telemetryService = telemetryService;
         this.forecastService = forecastService;
         this.flinkDeploymentService = flinkDeploymentService;
+        this.jobInventory = new JobInventory(flinkDeploymentService);
         this.planExecutor = planExecutor;
         this.legacySuspender = legacySuspender;
         this.policyOverride = policy;
@@ -92,6 +99,9 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
 
         CarbonForecast forecast = forecastService.fetch(spec.getForecastEndpoint());
         recordForecast(controllerName(resource), spec, status, forecast);
+
+        List<ManagedJob> managedJobs = jobInventory.discover(spec);
+        recordManagedJobs(status, managedJobs);
 
         SchedulingContext schedulingContext = buildContext(spec, status, gridStatus, forecast);
         boolean dirty = schedulingContext.isGridDirty();
@@ -131,6 +141,20 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         resource.setStatus(status);
         return UpdateControl.patchStatus(resource)
                 .rescheduleAfter(Duration.ofSeconds(RECONCILE_INTERVAL_SECONDS));
+    }
+
+    private void recordManagedJobs(GreenOpsStatus status, List<ManagedJob> jobs) {
+        status.setManagedJobCount(jobs.size());
+        List<ManagedJobStatus> reported = new ArrayList<>();
+        for (ManagedJob job : jobs) {
+            ManagedJobStatus entry = new ManagedJobStatus();
+            entry.setName(job.getName());
+            entry.setState(job.isSuspended() ? "suspended" : "running");
+            entry.setPriority(job.getPriority());
+            entry.setLastSavepointPath(job.getLastSavepointPath());
+            reported.add(entry);
+        }
+        status.setJobs(reported);
     }
 
     private String controllerName(GreenOpsResource resource) {

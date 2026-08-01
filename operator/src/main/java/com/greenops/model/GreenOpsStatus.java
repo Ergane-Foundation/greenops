@@ -11,6 +11,8 @@ public class GreenOpsStatus {
     private String lastError;
     private String decisionReason;
     private String activePolicy;
+    private Integer managedJobCount;
+    private java.util.List<ManagedJobStatus> jobs;
     private String forecastSource;
     private Integer forecastHorizonHours;
     private String nextDirtyWindowStart;
@@ -46,6 +48,12 @@ public class GreenOpsStatus {
 
     public String getActivePolicy() { return activePolicy; }
     public void setActivePolicy(String activePolicy) { this.activePolicy = activePolicy; }
+
+    public Integer getManagedJobCount() { return managedJobCount; }
+    public void setManagedJobCount(Integer managedJobCount) { this.managedJobCount = managedJobCount; }
+
+    public java.util.List<ManagedJobStatus> getJobs() { return jobs; }
+    public void setJobs(java.util.List<ManagedJobStatus> jobs) { this.jobs = jobs; }
 
     public String getForecastSource() { return forecastSource; }
     public void setForecastSource(String forecastSource) { this.forecastSource = forecastSource; }
