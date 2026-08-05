@@ -1,5 +1,6 @@
 package com.greenops.scheduling;
 
+import com.greenops.inventory.ManagedJob;
 import com.greenops.model.GreenOpsSpec;
 import com.greenops.model.GreenOpsStatus;
 import com.greenops.service.FlinkDeploymentService;
@@ -22,11 +23,20 @@ public class PlanExecutor {
     }
 
     public void apply(SuspensionPlan plan, GreenOpsSpec spec, GreenOpsStatus status) {
+        apply(plan, spec.getFlinkNamespace(), spec.getFlinkJobName(), status);
+    }
+
+    public String apply(SuspensionPlan plan, ManagedJob job, GreenOpsStatus status) {
+        return apply(plan, job.getNamespace(), job.getName(), status);
+    }
+
+    private String apply(SuspensionPlan plan, String namespace, String name, GreenOpsStatus status) {
         switch (plan.getAction()) {
-            case SUSPEND -> suspend(spec, status);
-            case RESUME -> resume(spec, status);
+            case SUSPEND -> suspend(namespace, name, status);
+            case RESUME -> resume(namespace, name, status);
             case HOLD -> hold(plan, status);
         }
+        return status.getLastAction();
     }
 
     private void hold(SuspensionPlan plan, GreenOpsStatus status) {
@@ -34,10 +44,7 @@ public class PlanExecutor {
         status.setLastAction("HOLD");
     }
 
-    private void suspend(GreenOpsSpec spec, GreenOpsStatus status) {
-        String namespace = spec.getFlinkNamespace();
-        String name = spec.getFlinkJobName();
-
+    private void suspend(String namespace, String name, GreenOpsStatus status) {
         Optional<String> currentState = flinkDeploymentService.getJobState(namespace, name);
         if (currentState.isPresent()
                 && FlinkDeploymentService.STATE_SUSPENDED.equalsIgnoreCase(currentState.get())) {
@@ -58,10 +65,7 @@ public class PlanExecutor {
         status.setLastError(null);
     }
 
-    private void resume(GreenOpsSpec spec, GreenOpsStatus status) {
-        String namespace = spec.getFlinkNamespace();
-        String name = spec.getFlinkJobName();
-
+    private void resume(String namespace, String name, GreenOpsStatus status) {
         Optional<String> currentState = flinkDeploymentService.getJobState(namespace, name);
         if (currentState.isPresent()
                 && FlinkDeploymentService.STATE_RUNNING.equalsIgnoreCase(currentState.get())) {
