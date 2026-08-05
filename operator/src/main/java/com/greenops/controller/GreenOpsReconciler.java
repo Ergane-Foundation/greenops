@@ -10,6 +10,8 @@ import com.greenops.metrics.GreenOpsMetrics;
 import com.greenops.model.GreenOpsResource;
 import com.greenops.model.GreenOpsSpec;
 import com.greenops.model.GreenOpsStatus;
+import com.greenops.scheduling.FleetPlanner;
+import com.greenops.scheduling.JobPlan;
 import com.greenops.scheduling.PlanExecutor;
 import com.greenops.scheduling.SchedulingContext;
 import com.greenops.scheduling.SchedulingPolicies;
@@ -115,15 +117,16 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         SchedulingPolicy policy = policyOverride != null
                 ? policyOverride
                 : SchedulingPolicies.fromSpec(spec);
-        SuspensionPlan plan = policy.decide(schedulingContext);
-        log.info("[GreenOps] Policy {} decided {}", policy.name(), plan);
         status.setActivePolicy(policy.name());
-        status.setDecisionReason(plan.getReason());
 
-        if (spec.isCooperativeSuspension()) {
-            planExecutor.apply(plan, spec, status);
-        } else {
+        if (!spec.isCooperativeSuspension()) {
+            SuspensionPlan plan = policy.decide(schedulingContext);
+            log.info("[GreenOps] Policy {} decided {}", policy.name(), plan);
+            status.setDecisionReason(plan.getReason());
             legacySuspender.apply(plan, spec, status);
+        } else {
+            List<JobPlan> jobPlans = new FleetPlanner(policy).plan(managedJobs, schedulingContext);
+            applyFleet(jobPlans, status);
         }
 
         if (dirty) {
@@ -141,6 +144,35 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         resource.setStatus(status);
         return UpdateControl.patchStatus(resource)
                 .rescheduleAfter(Duration.ofSeconds(RECONCILE_INTERVAL_SECONDS));
+    }
+
+    private void applyFleet(List<JobPlan> jobPlans, GreenOpsStatus status) {
+        if (jobPlans.isEmpty()) {
+            status.setLastAction("NO_JOBS");
+            status.setDecisionReason("no FlinkDeployments matched");
+            return;
+        }
+
+        List<ManagedJobStatus> reported = new ArrayList<>();
+        for (JobPlan jobPlan : jobPlans) {
+            log.info("[GreenOps] {} decided {}", jobPlan.getJobName(), jobPlan.getPlan());
+            String action = planExecutor.apply(jobPlan.getPlan(), jobPlan.getJob(), status);
+
+            ManagedJobStatus entry = new ManagedJobStatus();
+            entry.setName(jobPlan.getJobName());
+            entry.setPriority(jobPlan.getJob().getPriority());
+            entry.setState(jobPlan.getPlan().isSuspend() ? "suspended" : "running");
+            entry.setLastAction(action);
+            entry.setLastSavepointPath(jobPlan.getJob().getLastSavepointPath());
+            reported.add(entry);
+        }
+        status.setJobs(reported);
+
+        JobPlan first = jobPlans.get(0);
+        status.setDecisionReason(jobPlans.size() == 1
+                ? first.getPlan().getReason()
+                : String.format("%d jobs planned, %s: %s",
+                        jobPlans.size(), first.getJobName(), first.getPlan().getReason()));
     }
 
     private void recordManagedJobs(GreenOpsStatus status, List<ManagedJob> jobs) {
