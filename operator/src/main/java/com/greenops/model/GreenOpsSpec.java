@@ -19,6 +19,7 @@ public class GreenOpsSpec {
     private int assumedSavepointSeconds = 60;
     private int assumedRestartSeconds = 120;
     private double breakEvenMultiplier = 2.0;
+    private int maxConcurrentSuspensions = 0;
 
     public int getCarbonThreshold() { return carbonThreshold; }
     public void setCarbonThreshold(int carbonThreshold) { this.carbonThreshold = carbonThreshold; }
@@ -67,4 +68,7 @@ public class GreenOpsSpec {
 
     public double getBreakEvenMultiplier() { return breakEvenMultiplier; }
     public void setBreakEvenMultiplier(double breakEvenMultiplier) { this.breakEvenMultiplier = breakEvenMultiplier; }
+
+    public int getMaxConcurrentSuspensions() { return maxConcurrentSuspensions; }
+    public void setMaxConcurrentSuspensions(int maxConcurrentSuspensions) { this.maxConcurrentSuspensions = maxConcurrentSuspensions; }
 }

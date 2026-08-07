@@ -5,7 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SchedulingPoliciesTest {
 
@@ -40,9 +42,17 @@ class SchedulingPoliciesTest {
     }
 
     @Test
-    @DisplayName("the optimising policy is named but not built yet, so it falls back for now")
-    void optimisingIsNotAvailableYet() {
-        assertEquals("threshold", SchedulingPolicies.fromSpec(specWith("optimising")).name());
+    @DisplayName("the optimising policy plans across the fleet rather than per job")
+    void optimisingIsRecognised() {
+        assertTrue(SchedulingPolicies.isOptimising(specWith("optimising")));
+        assertFalse(SchedulingPolicies.isOptimising(specWith("forecast")));
+        assertFalse(SchedulingPolicies.isOptimising(new GreenOpsSpec()));
+    }
+
+    @Test
+    @DisplayName("the optimiser falls back to the forecast policy for each individual job")
+    void optimisingUsesForecastPerJob() {
+        assertEquals("forecast", SchedulingPolicies.fromSpec(specWith("optimising")).name());
     }
 
     @Test

@@ -12,6 +12,7 @@ import com.greenops.model.GreenOpsSpec;
 import com.greenops.model.GreenOpsStatus;
 import com.greenops.scheduling.FleetPlanner;
 import com.greenops.scheduling.JobPlan;
+import com.greenops.scheduling.OptimisingPolicy;
 import com.greenops.scheduling.PlanExecutor;
 import com.greenops.scheduling.SchedulingContext;
 import com.greenops.scheduling.SchedulingPolicies;
@@ -117,7 +118,9 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         SchedulingPolicy policy = policyOverride != null
                 ? policyOverride
                 : SchedulingPolicies.fromSpec(spec);
-        status.setActivePolicy(policy.name());
+        status.setActivePolicy(SchedulingPolicies.isOptimising(spec)
+                ? OptimisingPolicy.NAME
+                : policy.name());
 
         if (!spec.isCooperativeSuspension()) {
             SuspensionPlan plan = policy.decide(schedulingContext);
@@ -125,7 +128,9 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
             status.setDecisionReason(plan.getReason());
             legacySuspender.apply(plan, spec, status);
         } else {
-            List<JobPlan> jobPlans = new FleetPlanner(policy).plan(managedJobs, schedulingContext);
+            List<JobPlan> jobPlans = SchedulingPolicies.isOptimising(spec)
+                    ? SchedulingPolicies.optimiserFor(spec).plan(managedJobs, schedulingContext)
+                    : new FleetPlanner(policy).plan(managedJobs, schedulingContext);
             applyFleet(jobPlans, status);
         }
 

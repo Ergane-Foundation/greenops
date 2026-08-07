@@ -29,8 +29,25 @@ public final class SchedulingPolicies {
             return new ForecastAwarePolicy(costModelFor(spec), threshold);
         }
 
+        if (OptimisingPolicy.NAME.equals(requested)) {
+            return new ForecastAwarePolicy(costModelFor(spec), threshold);
+        }
+
         log.warn("Unknown scheduling policy {}, falling back to {}", requested, ThresholdPolicy.NAME);
         return threshold;
+    }
+
+    public static boolean isOptimising(GreenOpsSpec spec) {
+        return spec.getSchedulingPolicy() != null
+                && OptimisingPolicy.NAME.equals(spec.getSchedulingPolicy().trim().toLowerCase());
+    }
+
+    public static OptimisingPolicy optimiserFor(GreenOpsSpec spec) {
+        return new OptimisingPolicy(
+                costModelFor(spec),
+                new ForecastAwarePolicy(costModelFor(spec), new ThresholdPolicy()),
+                spec.getNodePowerWatts(),
+                spec.getMaxConcurrentSuspensions());
     }
 
     public static CostModel costModelFor(GreenOpsSpec spec) {
