@@ -105,6 +105,23 @@ spec:
                   type: string
                 managedJobCount:
                   type: integer
+                costHistory:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      jobName:
+                        type: string
+                      observedAt:
+                        type: string
+                      savepointSeconds:
+                        type: integer
+                      restartSeconds:
+                        type: integer
+                      stateSizeBytes:
+                        type: integer
+                      parallelism:
+                        type: integer
                 jobs:
                   type: array
                   items:

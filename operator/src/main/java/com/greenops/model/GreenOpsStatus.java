@@ -13,6 +13,7 @@ public class GreenOpsStatus {
     private String activePolicy;
     private Integer managedJobCount;
     private java.util.List<ManagedJobStatus> jobs;
+    private java.util.List<com.greenops.cost.CostObservation> costHistory;
     private String forecastSource;
     private Integer forecastHorizonHours;
     private String nextDirtyWindowStart;
@@ -54,6 +55,9 @@ public class GreenOpsStatus {
 
     public java.util.List<ManagedJobStatus> getJobs() { return jobs; }
     public void setJobs(java.util.List<ManagedJobStatus> jobs) { this.jobs = jobs; }
+
+    public java.util.List<com.greenops.cost.CostObservation> getCostHistory() { return costHistory; }
+    public void setCostHistory(java.util.List<com.greenops.cost.CostObservation> costHistory) { this.costHistory = costHistory; }
 
     public String getForecastSource() { return forecastSource; }
     public void setForecastSource(String forecastSource) { this.forecastSource = forecastSource; }

@@ -2,6 +2,9 @@ package com.greenops.controller;
 
 import com.greenops.forecast.CarbonForecast;
 import com.greenops.forecast.CarbonWindow;
+import com.greenops.cost.CostHistory;
+import com.greenops.cost.CostObservation;
+import com.greenops.cost.CostRecorder;
 import com.greenops.forecast.ForecastService;
 import com.greenops.inventory.JobInventory;
 import com.greenops.inventory.ManagedJob;
@@ -48,6 +51,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
     private final ForecastService forecastService;
     private final FlinkDeploymentService flinkDeploymentService;
     private final JobInventory jobInventory;
+    private final CostRecorder costRecorder = new CostRecorder();
     private final PlanExecutor planExecutor;
     private final LegacySavepointSuspender legacySuspender;
     private final SchedulingPolicy policyOverride;
@@ -105,6 +109,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
 
         List<ManagedJob> managedJobs = jobInventory.discover(spec);
         recordManagedJobs(status, managedJobs);
+        observeCosts(managedJobs, status);
 
         SchedulingContext schedulingContext = buildContext(spec, status, gridStatus, forecast);
         boolean dirty = schedulingContext.isGridDirty();
@@ -151,6 +156,39 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
                 .rescheduleAfter(Duration.ofSeconds(RECONCILE_INTERVAL_SECONDS));
     }
 
+    private void observeCosts(List<ManagedJob> jobs, GreenOpsStatus status) {
+        CostHistory history = CostHistory.of(status.getCostHistory());
+        Instant now = Instant.now();
+        boolean changed = false;
+
+        for (ManagedJob job : jobs) {
+            if (job.isSuspended() && costRecorder.isAwaitingSuspend(job.getName())) {
+                Optional<CostObservation> observed =
+                        costRecorder.suspendObserved(job.getName(), now, job.getFeatures());
+                if (observed.isPresent()) {
+                    history.add(observed.get());
+                    changed = true;
+                    log.info("[GreenOps] {} savepoint took {}s",
+                            job.getName(), observed.get().getSavepointSeconds());
+                }
+            }
+            if (!job.isSuspended() && costRecorder.isAwaitingResume(job.getName())) {
+                Optional<CostObservation> observed =
+                        costRecorder.resumeObserved(job.getName(), now, job.getFeatures());
+                if (observed.isPresent()) {
+                    history.add(observed.get());
+                    changed = true;
+                    log.info("[GreenOps] {} restart took {}s",
+                            job.getName(), observed.get().getRestartSeconds());
+                }
+            }
+        }
+
+        if (changed || status.getCostHistory() == null) {
+            status.setCostHistory(history.all());
+        }
+    }
+
     private void applyFleet(List<JobPlan> jobPlans, GreenOpsStatus status) {
         if (jobPlans.isEmpty()) {
             status.setLastAction("NO_JOBS");
@@ -161,7 +199,15 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         List<ManagedJobStatus> reported = new ArrayList<>();
         for (JobPlan jobPlan : jobPlans) {
             log.info("[GreenOps] {} decided {}", jobPlan.getJobName(), jobPlan.getPlan());
+            boolean wasSuspended = jobPlan.getJob().isSuspended();
             String action = planExecutor.apply(jobPlan.getPlan(), jobPlan.getJob(), status);
+
+            if ("SUSPEND_REQUESTED".equals(action) && !wasSuspended) {
+                costRecorder.suspendRequested(jobPlan.getJobName(), Instant.now());
+            } else if (("RESUME_FROM_SAVEPOINT".equals(action)
+                    || "RESUME_WITHOUT_SAVEPOINT".equals(action)) && wasSuspended) {
+                costRecorder.resumeRequested(jobPlan.getJobName(), Instant.now());
+            }
 
             ManagedJobStatus entry = new ManagedJobStatus();
             entry.setName(jobPlan.getJobName());
