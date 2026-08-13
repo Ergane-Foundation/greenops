@@ -120,9 +120,10 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
         log.info("[GreenOps] Grid status: {} | Carbon: {} gCO2/kWh | Threshold: {}",
                 gridStatus.getStatus(), gridStatus.getCarbonIntensity(), spec.getCarbonThreshold());
 
+        CostHistory costHistory = CostHistory.of(status.getCostHistory());
         SchedulingPolicy policy = policyOverride != null
                 ? policyOverride
-                : SchedulingPolicies.fromSpec(spec);
+                : SchedulingPolicies.fromSpec(spec, costHistory);
         status.setActivePolicy(SchedulingPolicies.isOptimising(spec)
                 ? OptimisingPolicy.NAME
                 : policy.name());
@@ -134,7 +135,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
             legacySuspender.apply(plan, spec, status);
         } else {
             List<JobPlan> jobPlans = SchedulingPolicies.isOptimising(spec)
-                    ? SchedulingPolicies.optimiserFor(spec).plan(managedJobs, schedulingContext)
+                    ? SchedulingPolicies.optimiserFor(spec, costHistory).plan(managedJobs, schedulingContext)
                     : new FleetPlanner(policy).plan(managedJobs, schedulingContext);
             applyFleet(jobPlans, status);
         }

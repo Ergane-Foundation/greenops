@@ -14,13 +14,27 @@ public final class CostPredictors {
     }
 
     public static CostPredictor fromSpec(GreenOpsSpec spec) {
+        return fromSpec(spec, new CostHistory());
+    }
+
+    public static CostPredictor fromSpec(GreenOpsSpec spec, CostHistory history) {
         StaticCostPredictor fallback = new StaticCostPredictor(
                 Duration.ofSeconds(spec.getAssumedSavepointSeconds()),
                 Duration.ofSeconds(spec.getAssumedRestartSeconds()));
 
-        String requested = spec.getCostPredictor() == null ? StaticCostPredictor.NAME : spec.getCostPredictor();
-        if (!StaticCostPredictor.NAME.equalsIgnoreCase(requested)) {
-            log.debug("Cost predictor {} not available yet, using {}", requested, StaticCostPredictor.NAME);
+        String requested = spec.getCostPredictor() == null
+                ? StaticCostPredictor.NAME
+                : spec.getCostPredictor().trim().toLowerCase();
+
+        if (ObservedCostPredictor.NAME.equals(requested)) {
+            return new ObservedCostPredictor(history, fallback);
+        }
+        if (RegressionCostPredictor.NAME.equals(requested)) {
+            return new RegressionCostPredictor(history,
+                    new ObservedCostPredictor(history, fallback));
+        }
+        if (!StaticCostPredictor.NAME.equals(requested)) {
+            log.warn("Unknown cost predictor {}, using {}", requested, StaticCostPredictor.NAME);
         }
         return fallback;
     }
