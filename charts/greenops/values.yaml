@@ -29,6 +29,13 @@ controller:
   carbonThreshold: 400
   cooperativeSuspension: true
   nodePowerWatts: 250
+  schedulingPolicy: threshold
+  costPredictor: static
+  breakEvenMultiplier: 2.0
+  assumedSavepointSeconds: 60
+  assumedRestartSeconds: 120
+  maxConcurrentSuspensions: 0
+  jobSelector: {}
   flinkJobName: greenops-flink
   flinkNamespace: ""
   telemetryEndpoint: ""

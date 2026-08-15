@@ -33,6 +33,10 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end -}}
 {{- end -}}
 
+{{- define "greenops.forecastEndpoint" -}}
+{{- printf "http://%s-telemetry.%s.svc.cluster.local:8080/telemetry/forecast" (include "greenops.name" .) .Release.Namespace -}}
+{{- end -}}
+
 {{- define "greenops.flinkRestEndpoint" -}}
 {{- if .Values.controller.flinkRestEndpoint -}}
 {{- .Values.controller.flinkRestEndpoint -}}

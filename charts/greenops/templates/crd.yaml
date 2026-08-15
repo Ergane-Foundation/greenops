@@ -31,9 +31,15 @@ spec:
                   default: 400
                 flinkJobName:
                   type: string
+                jobSelector:
+                  type: object
+                  additionalProperties:
+                    type: string
                 flinkNamespace:
                   type: string
                 telemetryEndpoint:
+                  type: string
+                forecastEndpoint:
                   type: string
                 cooperativeSuspension:
                   type: boolean
@@ -47,6 +53,26 @@ spec:
                 nodePowerWatts:
                   type: number
                   default: 250
+                schedulingPolicy:
+                  type: string
+                  enum: [threshold, forecast, optimising]
+                  default: threshold
+                costPredictor:
+                  type: string
+                  enum: [static, observed, regression]
+                  default: static
+                assumedSavepointSeconds:
+                  type: integer
+                  default: 60
+                assumedRestartSeconds:
+                  type: integer
+                  default: 120
+                breakEvenMultiplier:
+                  type: number
+                  default: 2.0
+                maxConcurrentSuspensions:
+                  type: integer
+                  default: 0
                 flinkRestEndpoint:
                   type: string
                 savepointDirectory:
@@ -74,6 +100,54 @@ spec:
                   type: string
                 lastError:
                   type: string
+                decisionReason:
+                  type: string
+                activePolicy:
+                  type: string
+                managedJobCount:
+                  type: integer
+                costHistory:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      jobName:
+                        type: string
+                      observedAt:
+                        type: string
+                      savepointSeconds:
+                        type: integer
+                      restartSeconds:
+                        type: integer
+                      stateSizeBytes:
+                        type: integer
+                      parallelism:
+                        type: integer
+                jobs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      state:
+                        type: string
+                      priority:
+                        type: integer
+                      lastAction:
+                        type: string
+                      lastSavepointPath:
+                        type: string
+                forecastSource:
+                  type: string
+                forecastHorizonHours:
+                  type: integer
+                nextDirtyWindowStart:
+                  type: string
+                nextDirtyWindowEnd:
+                  type: string
+                nextDirtyWindowPeak:
+                  type: integer
       additionalPrinterColumns:
         - name: Grid
           type: string
@@ -87,6 +161,17 @@ spec:
         - name: Savepoint
           type: string
           jsonPath: .status.savepointPhase
+        - name: Jobs
+          type: integer
+          jsonPath: .status.managedJobCount
+        - name: Policy
+          type: string
+          priority: 1
+          jsonPath: .status.activePolicy
+        - name: Reason
+          type: string
+          priority: 1
+          jsonPath: .status.decisionReason
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

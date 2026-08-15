@@ -78,6 +78,14 @@ Fields on the `GreenOpsController` resource:
 | `flinkRestEndpoint` | | Flink REST API, used only in non cooperative mode |
 | `savepointDirectory` | `s3://greenops/savepoints` | Where savepoints are written |
 | `savepointTimeoutSeconds` | `300` | How long to wait for a savepoint |
+| `schedulingPolicy` | `threshold` | `threshold`, `forecast` or `optimising` |
+| `costPredictor` | `static` | `static`, `observed` or `regression` |
+| `forecastEndpoint` | | Where to read the carbon forecast |
+| `jobSelector` | | Labels selecting the FlinkDeployments to manage |
+| `breakEvenMultiplier` | `2.0` | How much longer than the round trip a window must be |
+| `assumedSavepointSeconds` | `60` | Savepoint duration before anything has been measured |
+| `assumedRestartSeconds` | `120` | Restart duration before anything has been measured |
+| `maxConcurrentSuspensions` | `0` | How many jobs may be suspended together, 0 for no limit |
 
 Current state is visible without digging through logs:
 
@@ -89,6 +97,49 @@ kubectl get greenopscontrollers -n greenops
 NAME                        GRID    CARBON   ACTION                 SAVEPOINT   AGE
 greenops-flink-controller   DIRTY   850      SUSPEND_REQUESTED      REQUESTED   2h
 ```
+
+## Scheduling policies
+
+| Policy | Behaviour |
+| --- | --- |
+| `threshold` | Suspend whenever carbon is above the threshold. |
+| `forecast` | Look at how long the dirty stretch lasts and decline windows too short to pay for the savepoint and restart. Start the savepoint slightly before an imminent window. |
+| `optimising` | As above, and when more jobs want suspending than `maxConcurrentSuspensions` allows, prefer the ones avoiding most carbon per second of disruption. |
+
+Replayed over fourteen days of a simulated daily grid curve:
+
+| Policy | gCO2 avoided | Suspensions | Wasted |
+| --- | --- | --- | --- |
+| threshold | 15453 | 92 | 55 |
+| forecast | 14277 | 14 | 0 |
+
+A wasted suspension is one shorter than the round trip that paid for it. The
+forecast policy keeps most of the saving for a seventh of the disruption.
+Reproduce with `EvaluationRunner`.
+
+## Cost prediction
+
+The operator times its own suspends and restarts and keeps a rolling history
+on the resource status, so estimates improve as it runs.
+
+| Predictor | Behaviour |
+| --- | --- |
+| `static` | The configured constants. |
+| `observed` | Median and percentiles of what this cluster actually did. Needs three observations. |
+| `regression` | Ridge regression on state size and parallelism. Needs eight. |
+
+Mean absolute error against held out observations:
+
+| Scenario | static | observed | regression |
+| --- | --- | --- | --- |
+| Savepoint duration tracks state size | 65s | 34s | 5s |
+| Every job holds the same state | | 4.1s | 4.1s |
+
+The regression is worth having where jobs differ in size. Where they do not,
+it matches the median and nothing more, which is the expected result rather
+than a disappointing one. Each predictor falls back to the simpler one below
+it when there is too little history, so a fresh cluster behaves exactly as it
+did before and improves with use.
 
 ## Grid data
 
@@ -127,13 +178,16 @@ Treat it as an indication of scale rather than a reported number, and set
 
 ## Limitations
 
-- One Flink job per controller resource. Managing many jobs means many
-  resources, and there is no coordination between them.
-- Decisions are reactive. The operator responds to the current reading and does
-  not use a forecast, so it cannot avoid suspending just before a dirty window
-  ends, or weigh whether a short window is worth the restart cost.
 - Only Apache Flink is supported. The savepoint mechanism is Flink specific.
 - The estimate of carbon avoided assumes freed capacity is genuinely idle.
+- The policy comparison above is measured on generated grid traces rather than
+  a recorded history from a real grid. The shapes are plausible and the traces
+  are reproducible from a seed, but they are not production data.
+- The regression reads state size from an annotation. Until it is read from
+  Flink directly, that feature is only as good as whoever set it, and
+  `observed` is the safer default.
+- The optimiser ranks jobs greedily. At a few dozen jobs the difference from an
+  exact answer is small, but it is not proven optimal.
 
 ## Development
 

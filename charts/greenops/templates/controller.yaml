@@ -16,4 +16,15 @@ spec:
   flinkRestEndpoint: {{ include "greenops.flinkRestEndpoint" . | quote }}
   savepointDirectory: {{ .Values.controller.savepointDirectory | quote }}
   savepointTimeoutSeconds: {{ .Values.controller.savepointTimeoutSeconds }}
+  schedulingPolicy: {{ .Values.controller.schedulingPolicy }}
+  costPredictor: {{ .Values.controller.costPredictor }}
+  breakEvenMultiplier: {{ .Values.controller.breakEvenMultiplier }}
+  assumedSavepointSeconds: {{ .Values.controller.assumedSavepointSeconds }}
+  assumedRestartSeconds: {{ .Values.controller.assumedRestartSeconds }}
+  maxConcurrentSuspensions: {{ .Values.controller.maxConcurrentSuspensions }}
+  forecastEndpoint: {{ include "greenops.forecastEndpoint" . | quote }}
+  {{- if .Values.controller.jobSelector }}
+  jobSelector:
+    {{- toYaml .Values.controller.jobSelector | nindent 4 }}
+  {{- end }}
 {{- end }}
