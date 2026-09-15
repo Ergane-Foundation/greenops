@@ -160,22 +160,23 @@ class GreenOpsReconcilerTest {
     }
 
     @Test
-    @DisplayName("a job that is already gone has no state to lose")
-    void scalesDownWithoutSavepointWhenNoJobIsRunning() throws Exception {
+    @DisplayName("a job that is not RUNNING may still hold state, so it is left alone")
+    void doesNotScaleDownWhenNoJobIsRunning() throws Exception {
         gridReturns("DIRTY", 850);
         when(flink.getRunningJobId(REST)).thenReturn(Optional.empty());
 
         GreenOpsResource resource = resource(directModeSpec());
         reconciler.reconcile(resource, null);
 
-        verify(flink).scaleJobManager(NS, JOB, 0);
-        assertEquals("SCALE_DOWN_NO_JOB", resource.getStatus().getLastAction());
+        verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
+        assertEquals("SAVEPOINT_UNAVAILABLE", resource.getStatus().getLastAction());
         assertEquals("SKIPPED", resource.getStatus().getSavepointPhase());
+        assertNotNull(resource.getStatus().getLastError());
     }
 
     @Test
-    @DisplayName("without a REST endpoint there is no way to take a savepoint")
-    void fallsBackToDirectScaleDownWithoutRestEndpoint() {
+    @DisplayName("without a REST endpoint there is no way to take a savepoint, so nothing is suspended")
+    void doesNotScaleDownWithoutRestEndpoint() {
         gridReturns("DIRTY", 850);
         GreenOpsSpec spec = directModeSpec();
         spec.setFlinkRestEndpoint(null);
@@ -183,8 +184,9 @@ class GreenOpsReconcilerTest {
         GreenOpsResource resource = resource(spec);
         reconciler.reconcile(resource, null);
 
-        verify(flink).scaleJobManager(NS, JOB, 0);
-        assertEquals("SCALE_DOWN_NO_SAVEPOINT", resource.getStatus().getLastAction());
+        verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
+        assertEquals("SAVEPOINT_UNAVAILABLE", resource.getStatus().getLastAction());
+        assertNotNull(resource.getStatus().getLastError());
     }
 
     @Test

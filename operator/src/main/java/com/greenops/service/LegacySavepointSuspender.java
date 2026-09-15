@@ -40,20 +40,14 @@ public class LegacySavepointSuspender {
         log.info("[GreenOps] DIRTY GRID, beginning direct suspension lifecycle");
 
         if (spec.getFlinkRestEndpoint() == null || spec.getFlinkRestEndpoint().isBlank()) {
-            log.warn("[GreenOps] flinkRestEndpoint not configured, falling back to direct scale down without savepoint");
-            flinkService.scaleJobManager(spec.getFlinkNamespace(), spec.getFlinkJobName(), 0);
-            status.setLastAction("SCALE_DOWN_NO_SAVEPOINT");
-            status.setSavepointPhase("SKIPPED");
+            refuseWithoutSavepoint(status, "flinkRestEndpoint is not configured, so no savepoint can be taken");
             return;
         }
 
         try {
             Optional<String> jobId = flinkService.getRunningJobId(spec.getFlinkRestEndpoint());
             if (jobId.isEmpty()) {
-                log.warn("[GreenOps] No RUNNING Flink job, scaling down without savepoint");
-                flinkService.scaleJobManager(spec.getFlinkNamespace(), spec.getFlinkJobName(), 0);
-                status.setLastAction("SCALE_DOWN_NO_JOB");
-                status.setSavepointPhase("SKIPPED");
+                refuseWithoutSavepoint(status, "no RUNNING Flink job to take a savepoint from");
                 return;
             }
 
@@ -92,5 +86,12 @@ public class LegacySavepointSuspender {
             status.setSavepointPhase("FAILED");
             status.setLastError(e.getClass().getSimpleName() + ": " + e.getMessage());
         }
+    }
+
+    private void refuseWithoutSavepoint(GreenOpsStatus status, String reason) {
+        log.error("[GreenOps] Not scaling down: {}", reason);
+        status.setLastAction("SAVEPOINT_UNAVAILABLE");
+        status.setSavepointPhase("SKIPPED");
+        status.setLastError(reason);
     }
 }
