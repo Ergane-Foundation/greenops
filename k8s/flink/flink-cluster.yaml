@@ -14,8 +14,7 @@ spec:
     s3.endpoint: http://minio.greenops.svc.cluster.local:9000
     s3.path.style.access: "true"
     execution.checkpointing.interval: "10000"
-    s3.access-key: ${S3_ACCESS_KEY}
-    s3.secret-key: ${S3_SECRET_KEY}
+    fs.s3a.aws.credentials.provider: com.amazonaws.auth.EnvironmentVariableCredentialsProvider
   serviceAccount: flink
   podTemplate:
     apiVersion: v1
@@ -26,12 +25,12 @@ spec:
       containers:
         - name: flink-main-container
           env:
-            - name: S3_ACCESS_KEY
+            - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
                   name: greenops-object-store
                   key: root-user
-            - name: S3_SECRET_KEY
+            - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: greenops-object-store
