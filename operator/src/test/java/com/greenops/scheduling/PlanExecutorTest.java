@@ -7,6 +7,8 @@ import com.greenops.service.FlinkService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Optional;
 
@@ -37,6 +39,7 @@ class PlanExecutorTest {
         flink = mock(FlinkService.class);
         flinkDeployment = mock(FlinkDeploymentService.class);
         executor = new PlanExecutor(flink, flinkDeployment);
+        when(flinkDeployment.getUpgradeMode(anyString(), anyString())).thenReturn(Optional.of("savepoint"));
 
         spec = new GreenOpsSpec();
         spec.setFlinkJobName(JOB);
@@ -74,6 +77,32 @@ class PlanExecutorTest {
 
         assertEquals("SUSPEND_FAILED", status.getLastAction());
         assertNotNull(status.getLastError());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"stateless", "last-state"})
+    @DisplayName("a job whose upgrade mode takes no savepoint is never suspended")
+    void suspendIsBlockedWithoutSavepointUpgradeMode(String upgradeMode) {
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+        when(flinkDeployment.getUpgradeMode(NS, JOB)).thenReturn(Optional.of(upgradeMode));
+
+        executor.apply(SuspensionPlan.suspend("dirty"), spec, status);
+
+        verify(flinkDeployment, never()).suspend(anyString(), anyString());
+        assertEquals("SUSPEND_BLOCKED_UPGRADE_MODE", status.getLastAction());
+        assertNotNull(status.getLastError());
+    }
+
+    @Test
+    @DisplayName("an unset upgrade mode is Flink's default, stateless, and blocks suspension")
+    void suspendIsBlockedWhenUpgradeModeIsUnset() {
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+        when(flinkDeployment.getUpgradeMode(NS, JOB)).thenReturn(Optional.empty());
+
+        executor.apply(SuspensionPlan.suspend("dirty"), spec, status);
+
+        verify(flinkDeployment, never()).suspend(anyString(), anyString());
+        assertEquals("SUSPEND_BLOCKED_UPGRADE_MODE", status.getLastAction());
     }
 
     @Test

@@ -50,6 +50,7 @@ class GreenOpsReconcilerTest {
         flink = mock(FlinkService.class);
         flinkDeployment = mock(FlinkDeploymentService.class);
         reconciler = new GreenOpsReconciler(telemetry, flink, flinkDeployment);
+        when(flinkDeployment.getUpgradeMode(anyString(), anyString())).thenReturn(Optional.of("savepoint"));
     }
 
     private GreenOpsResource resource(GreenOpsSpec spec) {

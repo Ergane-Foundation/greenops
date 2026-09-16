@@ -53,6 +53,17 @@ public class PlanExecutor {
             return;
         }
 
+        String upgradeMode = flinkDeploymentService.getUpgradeMode(namespace, name).orElse("stateless");
+        if (!FlinkDeploymentService.UPGRADE_MODE_SAVEPOINT.equalsIgnoreCase(upgradeMode)) {
+            log.error("[GreenOps] Not suspending {}/{}: upgradeMode is {}, so Flink would not take a savepoint",
+                    namespace, name, upgradeMode);
+            status.setLastAction("SUSPEND_BLOCKED_UPGRADE_MODE");
+            status.setSavepointPhase("SKIPPED");
+            status.setLastError("FlinkDeployment " + namespace + "/" + name + " has upgradeMode " + upgradeMode
+                    + ", set it to savepoint for GreenOps to suspend it");
+            return;
+        }
+
         log.info("[GreenOps] Requesting cooperative suspend of {}/{}", namespace, name);
         if (!flinkDeploymentService.suspend(namespace, name)) {
             status.setLastAction("SUSPEND_FAILED");
