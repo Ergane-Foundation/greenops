@@ -81,16 +81,19 @@ public class PlanExecutor {
             return;
         }
 
-        String savepointPath = flinkDeploymentService
-                .getLastSavepointPath(namespace, name)
-                .orElse(status.getLastSavepointPath());
-
-        if (savepointPath == null || savepointPath.isBlank()) {
-            log.warn("[GreenOps] Resuming {}/{} with no known savepoint, job will start from the jar",
+        Optional<String> savepoint = flinkDeploymentService.getLastSavepointPath(namespace, name);
+        if (savepoint.isEmpty()) {
+            log.error("[GreenOps] Not resuming {}/{}: it has no savepoint of its own and would start with empty state",
                     namespace, name);
-        } else {
-            log.info("[GreenOps] Resuming {}/{} from savepoint {}", namespace, name, savepointPath);
+            status.setLastAction("RESUME_BLOCKED_NO_SAVEPOINT");
+            status.setSavepointPhase("MISSING");
+            status.setLastError("No savepoint recorded for " + namespace + "/" + name
+                    + ", resume it by hand if starting from empty state is acceptable");
+            return;
         }
+
+        String savepointPath = savepoint.get();
+        log.info("[GreenOps] Resuming {}/{} from savepoint {}", namespace, name, savepointPath);
 
         if (!flinkDeploymentService.resume(namespace, name, savepointPath)) {
             status.setLastAction("RESUME_FAILED");
@@ -98,14 +101,9 @@ public class PlanExecutor {
             return;
         }
 
-        if (savepointPath != null && !savepointPath.isBlank()) {
-            status.setLastSavepointPath(savepointPath);
-            status.setSavepointPhase("RESTORED");
-            status.setLastAction("RESUME_FROM_SAVEPOINT");
-        } else {
-            status.setSavepointPhase("NONE");
-            status.setLastAction("RESUME_WITHOUT_SAVEPOINT");
-        }
+        status.setLastSavepointPath(savepointPath);
+        status.setSavepointPhase("RESTORED");
+        status.setLastAction("RESUME_FROM_SAVEPOINT");
         status.setLastError(null);
     }
 }

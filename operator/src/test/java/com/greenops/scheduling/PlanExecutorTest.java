@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -88,6 +89,33 @@ class PlanExecutorTest {
         verify(flinkDeployment).resume(NS, JOB, "s3://greenops/savepoints/savepoint-xyz");
         assertEquals("RESUME_FROM_SAVEPOINT", status.getLastAction());
         assertEquals("RESTORED", status.getSavepointPhase());
+    }
+
+    @Test
+    @DisplayName("a job with no savepoint stays suspended rather than starting empty")
+    void resumeIsBlockedWithoutASavepoint() {
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+        when(flinkDeployment.getLastSavepointPath(NS, JOB)).thenReturn(Optional.empty());
+
+        executor.apply(SuspensionPlan.resume("clean"), spec, status);
+
+        verify(flinkDeployment, never()).resume(anyString(), anyString(), any());
+        assertEquals("RESUME_BLOCKED_NO_SAVEPOINT", status.getLastAction());
+        assertEquals("MISSING", status.getSavepointPhase());
+        assertNotNull(status.getLastError());
+    }
+
+    @Test
+    @DisplayName("a savepoint recorded for another job is never used to resume this one")
+    void resumeDoesNotBorrowAnotherJobsSavepoint() {
+        status.setLastSavepointPath("s3://greenops/savepoints/savepoint-of-another-job");
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+        when(flinkDeployment.getLastSavepointPath(NS, JOB)).thenReturn(Optional.empty());
+
+        executor.apply(SuspensionPlan.resume("clean"), spec, status);
+
+        verify(flinkDeployment, never()).resume(anyString(), anyString(), any());
+        assertEquals("RESUME_BLOCKED_NO_SAVEPOINT", status.getLastAction());
     }
 
     @Test

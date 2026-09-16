@@ -205,8 +205,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
 
             if ("SUSPEND_REQUESTED".equals(action) && !wasSuspended) {
                 costRecorder.suspendRequested(jobPlan.getJobName(), Instant.now());
-            } else if (("RESUME_FROM_SAVEPOINT".equals(action)
-                    || "RESUME_WITHOUT_SAVEPOINT".equals(action)) && wasSuspended) {
+            } else if ("RESUME_FROM_SAVEPOINT".equals(action) && wasSuspended) {
                 costRecorder.resumeRequested(jobPlan.getJobName(), Instant.now());
             }
 
