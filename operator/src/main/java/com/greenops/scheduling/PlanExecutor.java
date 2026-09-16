@@ -8,6 +8,7 @@ import com.greenops.service.FlinkService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public class PlanExecutor {
@@ -50,6 +51,9 @@ public class PlanExecutor {
                 && FlinkDeploymentService.STATE_SUSPENDED.equalsIgnoreCase(currentState.get())) {
             log.info("[GreenOps] FlinkDeployment {}/{} already suspended", namespace, name);
             status.setLastAction("ALREADY_SUSPENDED");
+            if ("REQUESTED".equals(status.getSavepointPhase()) || "FAILED".equals(status.getSavepointPhase())) {
+                confirmSavepoint(namespace, name, status);
+            }
             return;
         }
 
@@ -74,6 +78,28 @@ public class PlanExecutor {
         status.setSavepointPhase("REQUESTED");
         status.setLastAction("SUSPEND_REQUESTED");
         status.setLastError(null);
+    }
+
+    private void confirmSavepoint(String namespace, String name, GreenOpsStatus status) {
+        Optional<String> lifecycle = flinkDeploymentService.getLifecycleState(namespace, name);
+        if (lifecycle.isPresent() && FlinkDeploymentService.LIFECYCLE_SUSPENDED.equalsIgnoreCase(lifecycle.get())) {
+            Optional<String> savepoint = flinkDeploymentService.getLastSavepointPath(namespace, name);
+            log.info("[GreenOps] FlinkDeployment {}/{} suspended with savepoint {}",
+                    namespace, name, savepoint.orElse("unknown"));
+            status.setSavepointPhase("COMPLETED");
+            savepoint.ifPresent(status::setLastSavepointPath);
+            status.setLastSavepointAt(Instant.now().toString());
+            status.setLastError(null);
+            return;
+        }
+
+        Optional<String> error = flinkDeploymentService.getError(namespace, name);
+        if (error.isPresent()) {
+            log.error("[GreenOps] FlinkDeployment {}/{} has not suspended, Flink reports: {}",
+                    namespace, name, error.get());
+            status.setSavepointPhase("FAILED");
+            status.setLastError("Suspend of " + namespace + "/" + name + " has not completed: " + error.get());
+        }
     }
 
     private void resume(String namespace, String name, GreenOpsStatus status) {

@@ -21,6 +21,7 @@ public class FlinkDeploymentService {
     public static final String STATE_RUNNING = "running";
     public static final String STATE_SUSPENDED = "suspended";
     public static final String UPGRADE_MODE_SAVEPOINT = "savepoint";
+    public static final String LIFECYCLE_SUSPENDED = "SUSPENDED";
 
     private static final CustomResourceDefinitionContext FLINK_DEPLOYMENT_CONTEXT =
             new CustomResourceDefinitionContext.Builder()
@@ -75,6 +76,24 @@ public class FlinkDeploymentService {
         return get(namespace, name).flatMap(resource -> {
             Object mode = nested(resource.getAdditionalProperties(), "spec", "job", "upgradeMode");
             return mode == null ? Optional.empty() : Optional.of(String.valueOf(mode));
+        });
+    }
+
+    public Optional<String> getLifecycleState(String namespace, String name) {
+        return get(namespace, name).flatMap(resource -> {
+            Object state = nested(resource.getAdditionalProperties(), "status", "lifecycleState");
+            return state == null ? Optional.empty() : Optional.of(String.valueOf(state));
+        });
+    }
+
+    public Optional<String> getError(String namespace, String name) {
+        return get(namespace, name).flatMap(resource -> {
+            Object error = nested(resource.getAdditionalProperties(), "status", "error");
+            if (error == null) {
+                return Optional.empty();
+            }
+            String message = String.valueOf(error);
+            return message.isBlank() ? Optional.empty() : Optional.of(message);
         });
     }
 

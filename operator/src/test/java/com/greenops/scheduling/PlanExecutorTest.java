@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -66,6 +67,66 @@ class PlanExecutorTest {
 
         verify(flinkDeployment, never()).suspend(anyString(), anyString());
         assertEquals("ALREADY_SUSPENDED", status.getLastAction());
+    }
+
+    @Test
+    @DisplayName("a requested savepoint is marked completed once Flink reports the job suspended")
+    void suspendConfirmsTheSavepoint() {
+        status.setSavepointPhase("REQUESTED");
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+        when(flinkDeployment.getLifecycleState(NS, JOB)).thenReturn(Optional.of("SUSPENDED"));
+        when(flinkDeployment.getLastSavepointPath(NS, JOB))
+                .thenReturn(Optional.of("s3://greenops/savepoints/savepoint-01852e"));
+
+        executor.apply(SuspensionPlan.suspend("dirty"), spec, status);
+
+        assertEquals("ALREADY_SUSPENDED", status.getLastAction());
+        assertEquals("COMPLETED", status.getSavepointPhase());
+        assertEquals("s3://greenops/savepoints/savepoint-01852e", status.getLastSavepointPath());
+        assertNotNull(status.getLastSavepointAt());
+    }
+
+    @Test
+    @DisplayName("a savepoint still in progress stays requested")
+    void suspendInProgressStaysRequested() {
+        status.setSavepointPhase("REQUESTED");
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+        when(flinkDeployment.getLifecycleState(NS, JOB)).thenReturn(Optional.of("UPGRADING"));
+        when(flinkDeployment.getError(NS, JOB)).thenReturn(Optional.empty());
+
+        executor.apply(SuspensionPlan.suspend("dirty"), spec, status);
+
+        assertEquals("REQUESTED", status.getSavepointPhase());
+    }
+
+    @Test
+    @DisplayName("an error from Flink while suspending is surfaced as a failed savepoint")
+    void suspendErrorMarksTheSavepointFailed() {
+        status.setSavepointPhase("REQUESTED");
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+        when(flinkDeployment.getLifecycleState(NS, JOB)).thenReturn(Optional.of("DEPLOYED"));
+        when(flinkDeployment.getError(NS, JOB)).thenReturn(Optional.of("Savepoint failed: bucket unreachable"));
+
+        executor.apply(SuspensionPlan.suspend("dirty"), spec, status);
+
+        assertEquals("FAILED", status.getSavepointPhase());
+        assertNotNull(status.getLastError());
+    }
+
+    @Test
+    @DisplayName("a failed savepoint that Flink later completes is marked completed")
+    void suspendRecoversFromAnEarlierFailure() {
+        status.setSavepointPhase("FAILED");
+        status.setLastError("Savepoint failed: bucket unreachable");
+        when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+        when(flinkDeployment.getLifecycleState(NS, JOB)).thenReturn(Optional.of("SUSPENDED"));
+        when(flinkDeployment.getLastSavepointPath(NS, JOB))
+                .thenReturn(Optional.of("s3://greenops/savepoints/savepoint-retry"));
+
+        executor.apply(SuspensionPlan.suspend("dirty"), spec, status);
+
+        assertEquals("COMPLETED", status.getSavepointPhase());
+        assertNull(status.getLastError());
     }
 
     @Test
