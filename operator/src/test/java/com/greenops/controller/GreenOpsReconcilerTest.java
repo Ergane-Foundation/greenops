@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -210,15 +211,15 @@ class GreenOpsReconcilerTest {
     }
 
     @Test
-    @DisplayName("an unreachable telemetry service must not trigger a suspension")
-    void treatsUnknownGridBelowThresholdAsClean() {
+    @DisplayName("an unreachable telemetry service neither suspends nor resumes")
+    void holdsWhenTheGridIsUnknown() {
         gridReturns("UNKNOWN", 0);
 
         GreenOpsResource resource = resource(directModeSpec());
         reconciler.reconcile(resource, null);
 
-        verify(flink, never()).scaleJobManager(anyString(), anyString(), eq(0));
-        assertEquals("SCALE_UP", resource.getStatus().getLastAction());
+        verify(flink, never()).scaleJobManager(anyString(), anyString(), anyInt());
+        assertEquals("HOLD", resource.getStatus().getLastAction());
     }
 
     @Test
@@ -351,6 +352,35 @@ class GreenOpsReconcilerTest {
 
             verify(flinkDeployment, never()).suspend(anyString(), anyString());
             assertEquals("ALREADY_SUSPENDED", resource.getStatus().getLastAction());
+        }
+
+        @Test
+        @DisplayName("a suspended job stays suspended while the grid is unknown")
+        void doesNotResumeOnAnUnknownGrid() {
+            gridReturns("UNKNOWN", 0);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+            when(flinkDeployment.getLastSavepointPath(NS, JOB))
+                    .thenReturn(Optional.of("s3://greenops/savepoints/savepoint-xyz"));
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flinkDeployment, never()).resume(anyString(), anyString(), any());
+            assertEquals("HOLD", resource.getStatus().getLastAction());
+            assertTrue(resource.getStatus().getDecisionReason().contains("UNKNOWN"));
+        }
+
+        @Test
+        @DisplayName("a high stale reading on an unknown grid does not suspend")
+        void doesNotSuspendOnAnUnknownGridEvenAboveThreshold() {
+            gridReturns("UNKNOWN", 900);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+
+            GreenOpsResource resource = resource(cooperativeSpec());
+            reconciler.reconcile(resource, null);
+
+            verify(flinkDeployment, never()).suspend(anyString(), anyString());
+            assertEquals("HOLD", resource.getStatus().getLastAction());
         }
 
         @Test

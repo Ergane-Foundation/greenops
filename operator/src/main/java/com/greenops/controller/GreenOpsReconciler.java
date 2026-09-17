@@ -129,15 +129,31 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
                 ? OptimisingPolicy.NAME
                 : policy.name());
 
+        boolean gridKnown = isKnown(gridStatus);
+        SuspensionPlan unknownGrid = SuspensionPlan.hold(String.format(
+                "grid status is %s, leaving every job as it is until telemetry recovers",
+                gridStatus.getStatus()));
+        if (!gridKnown) {
+            log.warn("[GreenOps] {}", unknownGrid.getReason());
+        }
+
         if (!spec.isCooperativeSuspension()) {
-            SuspensionPlan plan = policy.decide(schedulingContext);
+            SuspensionPlan plan = gridKnown ? policy.decide(schedulingContext) : unknownGrid;
             log.info("[GreenOps] Policy {} decided {}", policy.name(), plan);
             status.setDecisionReason(plan.getReason());
             legacySuspender.apply(plan, spec, status);
         } else {
-            List<JobPlan> jobPlans = SchedulingPolicies.isOptimising(spec)
-                    ? SchedulingPolicies.optimiserFor(spec, costHistory).plan(managedJobs, schedulingContext)
-                    : new FleetPlanner(policy).plan(managedJobs, schedulingContext);
+            List<JobPlan> jobPlans;
+            if (!gridKnown) {
+                jobPlans = new ArrayList<>();
+                for (ManagedJob job : managedJobs) {
+                    jobPlans.add(new JobPlan(job, unknownGrid));
+                }
+            } else if (SchedulingPolicies.isOptimising(spec)) {
+                jobPlans = SchedulingPolicies.optimiserFor(spec, costHistory).plan(managedJobs, schedulingContext);
+            } else {
+                jobPlans = new FleetPlanner(policy).plan(managedJobs, schedulingContext);
+            }
             applyFleet(jobPlans, status);
         }
 
@@ -242,6 +258,11 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
             reported.add(entry);
         }
         status.setJobs(reported);
+    }
+
+    private static boolean isKnown(TelemetryService.GridStatus gridStatus) {
+        return "DIRTY".equalsIgnoreCase(gridStatus.getStatus())
+                || "GREEN".equalsIgnoreCase(gridStatus.getStatus());
     }
 
     private String controllerName(GreenOpsResource resource) {
