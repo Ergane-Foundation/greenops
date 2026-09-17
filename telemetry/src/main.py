@@ -18,6 +18,9 @@ ELECTRICITY_MAPS_TOKEN = os.getenv("ELECTRICITY_MAPS_TOKEN", "")
 CARBON_THRESHOLD = int(os.getenv("CARBON_THRESHOLD_GCO2", "400"))
 ZONE = os.getenv("ELECTRICITY_ZONE", "IN-NO")
 FORECAST_POLL_SECONDS = int(os.getenv("FORECAST_POLL_SECONDS", "900"))
+STALE_AFTER_SECONDS = int(os.getenv("STALE_AFTER_SECONDS", "600"))
+
+last_good_reading: Optional[datetime] = None
 
 current_state = {
     "carbon_intensity": 0,
@@ -41,7 +44,28 @@ async def get_status(simulate: Optional[str] = Query(None)):
         return {**current_state, "grid_status": "DIRTY", "carbon_intensity": 850}
     if simulate == "clean":
         return {**current_state, "grid_status": "GREEN", "carbon_intensity": 120}
-    return current_state
+    if _is_stale():
+        return {**current_state, "grid_status": "UNKNOWN", "carbon_intensity": None, "stale": True}
+    return {**current_state, "stale": False}
+
+
+def _is_stale() -> bool:
+    if last_good_reading is None:
+        return True
+    age = (datetime.now(timezone.utc) - last_good_reading).total_seconds()
+    return age > STALE_AFTER_SECONDS
+
+
+def _record_reading(payload) -> None:
+    global last_good_reading
+    intensity = payload.get("carbonIntensity") if isinstance(payload, dict) else None
+    if not isinstance(intensity, (int, float)) or isinstance(intensity, bool) or intensity < 0:
+        print(f"[Telemetry] Response held no usable carbonIntensity: {intensity!r}")
+        return
+    current_state["carbon_intensity"] = intensity
+    current_state["grid_status"] = "DIRTY" if intensity > CARBON_THRESHOLD else "GREEN"
+    current_state["last_updated"] = payload.get("datetime")
+    last_good_reading = datetime.now(timezone.utc)
 
 def _offset_points(offset_gco2: int):
     return [{**p, "carbon_intensity": max(0, p["carbon_intensity"] + offset_gco2)}
@@ -70,11 +94,10 @@ async def poll_carbon_intensity():
                         headers={"auth-token": ELECTRICITY_MAPS_TOKEN},
                         timeout=10
                     )
-                    data = resp.json()
-                    intensity = data.get("carbonIntensity", 0)
-                    current_state["carbon_intensity"] = intensity
-                    current_state["grid_status"] = "DIRTY" if intensity > CARBON_THRESHOLD else "GREEN"
-                    current_state["last_updated"] = data.get("datetime")
+                    if resp.status_code == 200:
+                        _record_reading(resp.json())
+                    else:
+                        print(f"[Telemetry] Carbon intensity returned HTTP {resp.status_code}, keeping last reading")
             except Exception as e:
                 print(f"[Telemetry] Error: {e}")
         else:
