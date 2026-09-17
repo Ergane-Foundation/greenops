@@ -78,6 +78,9 @@ public class JobInventory {
         boolean suspended = FlinkDeploymentService.STATE_SUSPENDED
                 .equalsIgnoreCase(String.valueOf(nested(props, "spec", "job", "state")));
 
+        boolean observedSuspended = FlinkDeploymentService.LIFECYCLE_SUSPENDED
+                .equalsIgnoreCase(String.valueOf(nested(props, "status", "lifecycleState")));
+
         Object savepoint = nested(props, "status", "jobStatus", "upgradeSavepointPath");
         if (savepoint == null) {
             savepoint = nested(props, "status", "jobStatus", "savepointInfo", "lastSavepoint", "location");
@@ -89,6 +92,7 @@ public class JobInventory {
                 .name(name)
                 .namespace(namespace)
                 .suspended(suspended)
+                .observedSuspended(observedSuspended)
                 .lastSavepointPath(savepoint == null ? null : String.valueOf(savepoint))
                 .priority(intAnnotation(annotations, PRIORITY_ANNOTATION, ManagedJob.DEFAULT_PRIORITY))
                 .maxSuspension(durationAnnotation(annotations, MAX_SUSPENSION_ANNOTATION))

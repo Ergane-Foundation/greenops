@@ -11,6 +11,7 @@ public final class ManagedJob {
     private final String name;
     private final String namespace;
     private final boolean suspended;
+    private final boolean observedSuspended;
     private final String lastSavepointPath;
     private final int priority;
     private final Duration maxSuspension;
@@ -20,6 +21,7 @@ public final class ManagedJob {
         this.name = builder.name;
         this.namespace = builder.namespace;
         this.suspended = builder.suspended;
+        this.observedSuspended = builder.observedSuspended;
         this.lastSavepointPath = builder.lastSavepointPath;
         this.priority = builder.priority;
         this.maxSuspension = builder.maxSuspension;
@@ -42,6 +44,10 @@ public final class ManagedJob {
 
     public boolean isSuspended() {
         return suspended;
+    }
+
+    public boolean isObservedSuspended() {
+        return observedSuspended;
     }
 
     public String getLastSavepointPath() {
@@ -80,6 +86,7 @@ public final class ManagedJob {
         private String name;
         private String namespace;
         private boolean suspended;
+        private boolean observedSuspended;
         private String lastSavepointPath;
         private int priority = DEFAULT_PRIORITY;
         private Duration maxSuspension;
@@ -97,6 +104,11 @@ public final class ManagedJob {
 
         public Builder suspended(boolean suspended) {
             this.suspended = suspended;
+            return this;
+        }
+
+        public Builder observedSuspended(boolean observedSuspended) {
+            this.observedSuspended = observedSuspended;
             return this;
         }
 

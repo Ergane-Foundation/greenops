@@ -90,6 +90,7 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
     public UpdateControl<GreenOpsResource> reconcile(GreenOpsResource resource, Context<GreenOpsResource> context) {
         GreenOpsSpec spec = resource.getSpec();
         GreenOpsStatus status = resource.getStatus() == null ? new GreenOpsStatus() : resource.getStatus();
+        String phaseBefore = status.getSavepointPhase();
         status.setLastReconciledAt(Instant.now().toString());
 
         if (spec == null || spec.getTelemetryEndpoint() == null) {
@@ -140,16 +141,19 @@ public class GreenOpsReconciler implements Reconciler<GreenOpsResource> {
             applyFleet(jobPlans, status);
         }
 
-        if (dirty) {
-            GreenOpsMetrics.accrueSuspension(controller, spec.getFlinkJobName(),
-                    gridStatus.getCarbonIntensity(), spec.getNodePowerWatts());
-        } else {
-            GreenOpsMetrics.markRunning(controller, spec.getFlinkJobName(), spec.getNodePowerWatts());
+        for (ManagedJob job : managedJobs) {
+            if (spec.isCooperativeSuspension() && job.isObservedSuspended()) {
+                GreenOpsMetrics.accrueSuspension(controller, job.getName(),
+                        gridStatus.getCarbonIntensity(), spec.getNodePowerWatts());
+            } else {
+                GreenOpsMetrics.markRunning(controller, job.getName(), spec.getNodePowerWatts());
+            }
         }
 
         GreenOpsMetrics.recordAction(controller, status.getLastAction());
-        if (status.getSavepointPhase() != null) {
-            GreenOpsMetrics.recordSavepoint(controller, status.getSavepointPhase());
+        String phase = status.getSavepointPhase();
+        if (phase != null && !phase.equals(phaseBefore)) {
+            GreenOpsMetrics.recordSavepoint(controller, phase);
         }
 
         resource.setStatus(status);

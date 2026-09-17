@@ -12,12 +12,20 @@ import com.greenops.service.LegacySavepointSuspender;
 import com.greenops.service.FlinkService;
 import com.greenops.service.SavepointResult;
 import com.greenops.service.TelemetryService;
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -356,6 +364,103 @@ class GreenOpsReconcilerTest {
 
             assertEquals("SUSPEND_FAILED", resource.getStatus().getLastAction());
             assertNotNull(resource.getStatus().getLastError());
+        }
+    }
+
+    @Nested
+    @DisplayName("carbon is only counted while a job is actually suspended")
+    class Metrics {
+
+        private GenericKubernetesResource flinkDeploymentIn(String lifecycleState) {
+            GenericKubernetesResource deployment = new GenericKubernetesResource();
+            ObjectMeta meta = new ObjectMeta();
+            meta.setName(JOB);
+            meta.setNamespace(NS);
+            deployment.setMetadata(meta);
+            deployment.setAdditionalProperty("spec", Map.of("job", Map.of("state", "running")));
+            deployment.setAdditionalProperty("status", Map.of("lifecycleState", lifecycleState));
+            return deployment;
+        }
+
+        private GreenOpsResource resourceNamed(String controller) {
+            GreenOpsResource resource = resource(cooperativeSpec());
+            resource.getMetadata().setName(controller);
+            return resource;
+        }
+
+        private double sample(String metric, String controller, String labelName, String labelValue) {
+            for (MetricSnapshot snapshot : PrometheusRegistry.defaultRegistry.scrape()) {
+                if (!metric.startsWith(snapshot.getMetadata().getName())) {
+                    continue;
+                }
+                for (DataPointSnapshot point : snapshot.getDataPoints()) {
+                    Labels labels = point.getLabels();
+                    if (controller.equals(labels.get("controller")) && labelValue.equals(labels.get(labelName))) {
+                        if (point instanceof GaugeSnapshot.GaugeDataPointSnapshot gauge) {
+                            return gauge.getValue();
+                        }
+                        if (point instanceof CounterSnapshot.CounterDataPointSnapshot counter) {
+                            return counter.getValue();
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+
+        @Test
+        @DisplayName("a dirty grid alone does not count as a suspension")
+        void aHeldJobOnADirtyGridIsNotCountedAsSuspended() {
+            gridReturns("DIRTY", 850);
+            when(flinkDeployment.get(NS, JOB)).thenReturn(Optional.of(flinkDeploymentIn("STABLE")));
+            SchedulingPolicy alwaysHold = new SchedulingPolicy() {
+                @Override
+                public String name() {
+                    return "always-hold";
+                }
+
+                @Override
+                public SuspensionPlan decide(SchedulingContext context) {
+                    return SuspensionPlan.hold("window too short");
+                }
+            };
+            reconciler = new GreenOpsReconciler(telemetry, new ForecastService(), flinkDeployment,
+                    new PlanExecutor(flink, flinkDeployment), new LegacySavepointSuspender(flink),
+                    alwaysHold);
+
+            reconciler.reconcile(resourceNamed("metrics-held"), null);
+
+            assertEquals(0.0, sample("greenops_job_suspended", "metrics-held", "job", JOB));
+        }
+
+        @Test
+        @DisplayName("a job Flink reports as suspended is counted")
+        void aSuspendedJobIsCounted() {
+            gridReturns("DIRTY", 850);
+            when(flinkDeployment.get(NS, JOB)).thenReturn(Optional.of(flinkDeploymentIn("SUSPENDED")));
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+
+            reconciler.reconcile(resourceNamed("metrics-suspended"), null);
+
+            assertEquals(1.0, sample("greenops_job_suspended", "metrics-suspended", "job", JOB));
+        }
+
+        @Test
+        @DisplayName("a savepoint is counted once, not once per reconcile")
+        void aSavepointPhaseIsCountedOnce() {
+            gridReturns("DIRTY", 850);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("running"));
+            when(flinkDeployment.suspend(NS, JOB)).thenReturn(true);
+            GreenOpsResource resource = resourceNamed("metrics-once");
+
+            reconciler.reconcile(resource, null);
+            when(flinkDeployment.getJobState(NS, JOB)).thenReturn(Optional.of("suspended"));
+            when(flinkDeployment.getError(NS, JOB)).thenReturn(Optional.empty());
+            reconciler.reconcile(resource, null);
+            reconciler.reconcile(resource, null);
+
+            assertEquals("REQUESTED", resource.getStatus().getSavepointPhase());
+            assertEquals(1.0, sample("greenops_savepoint_total", "metrics-once", "result", "REQUESTED"));
         }
     }
 }
