@@ -30,6 +30,8 @@ NS="greenops"
 MINIO_USER="greenops"
 MINIO_PASSWORD="greenops123"
 MINIO_BUCKET="greenops"
+FLINK_OPERATOR_VERSION="1.14.0"
+CERT_MANAGER_VERSION="v1.16.0"
 
 log()  { printf "\033[1;32m[setup]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[warn]\033[0m  %s\n" "$*"; }
@@ -82,23 +84,23 @@ kubectl apply -f k8s/namespace.yaml
 log "Applying object store credentials Secret"
 kubectl apply -f k8s/minio/object-store-secret.yaml
 
-if ! helm repo list 2>/dev/null | grep -q '^flink-operator-repo'; then
-  helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.8.0/
-fi
+helm repo add --force-update "flink-kubernetes-operator-$FLINK_OPERATOR_VERSION" \
+  "https://archive.apache.org/dist/flink/flink-kubernetes-operator-$FLINK_OPERATOR_VERSION/" >/dev/null
 if ! helm repo list 2>/dev/null | grep -q '^bitnami'; then
   helm repo add bitnami https://charts.bitnami.com/bitnami
 fi
 helm repo update >/dev/null
 
-log "Installing/upgrading cert-manager (Flink operator dep)"
+log "Installing/upgrading cert-manager $CERT_MANAGER_VERSION (Flink operator dep)"
 if ! kubectl get ns cert-manager >/dev/null 2>&1; then
-  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+  kubectl apply -f "https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.yaml"
   kubectl -n cert-manager wait --for=condition=Available deploy --all --timeout=180s
 fi
 
-log "Installing/upgrading flink-kubernetes-operator"
+log "Installing/upgrading flink-kubernetes-operator $FLINK_OPERATOR_VERSION"
 helm upgrade --install flink-kubernetes-operator \
-  flink-operator-repo/flink-kubernetes-operator \
+  "flink-kubernetes-operator-$FLINK_OPERATOR_VERSION/flink-kubernetes-operator" \
+  --version "$FLINK_OPERATOR_VERSION" \
   --namespace "$NS" --values k8s/flink/flink-operator-values.yaml \
   --wait --timeout 5m
 
