@@ -1,0 +1,63 @@
+name: Bug report
+description: Something does not work the way the documentation says it should.
+labels: ["bug", "needs triage"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it
+      description: The smallest set of steps or configuration that shows the problem.
+      placeholder: |
+        1. make up
+        2. make demo-dirty
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Operator
+        - Telemetry service
+        - Dashboard
+        - Helm chart or manifests
+        - Setup scripts or Makefile
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: state-loss
+    attributes:
+      label: Was any Flink job state lost?
+      description: A job suspended without a savepoint, or resumed from the wrong one, is the most serious kind of bug here.
+      options:
+        - "No"
+        - "Yes"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and status
+      description: Output of `make status` and the relevant operator logs (`kubectl logs deploy/greenops-operator -n greenops`).
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      placeholder: e.g. 5a16fa5
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and architecture, Kubernetes distribution and version, Flink and Flink Kubernetes Operator versions.
