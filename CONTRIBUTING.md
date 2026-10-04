@@ -70,16 +70,29 @@ npm run build
 
 ### Running everything on a local cluster
 
-`scripts/setup.sh` builds the images and deploys the whole system to
-Minikube, including the Flink Kubernetes Operator, SeaweedFS and a sample Flink
-job. It needs Docker, Minikube, kubectl, Helm, Java 17 and Maven. Set
-`MINIKUBE_HOME` if you keep Minikube's state somewhere other than the
-default. Then:
+You need Docker, Minikube, kubectl, Helm, Java 17 and Maven. Give Docker at
+least 6GB of memory.
 
 ```bash
-./scripts/simulate-dirty-grid.sh
-./scripts/simulate-clean-grid.sh
+make up
 ```
+
+This creates a Minikube profile called `greenops`, builds the images, deploys
+the Flink Kubernetes Operator, SeaweedFS, the GreenOps operator and a sample
+Flink job, and finishes with a smoke test that suspends the job and resumes
+it from its savepoint. The first run takes around 20 minutes.
+
+| Command | What it does |
+| --- | --- |
+| `make demo` | Suspend the job, then resume it from its savepoint |
+| `make demo-dirty` | Suspend the job and wait for its savepoint |
+| `make demo-clean` | Resume the job and wait for it to restore |
+| `make status` | Show the controller, the Flink job and the pods |
+| `make test` | Run the operator test suite |
+| `make teardown` | Delete the cluster |
+
+`PROFILE`, `CPUS` and `MEMORY` change the Minikube profile and its size, for
+example `make up PROFILE=greenops-dev MEMORY=8g`.
 
 ## Making a change
 
