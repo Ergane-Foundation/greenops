@@ -53,7 +53,7 @@ helm install greenops ./charts/greenops --namespace greenops --create-namespace
 The chart installs the CRD, the operator, the telemetry service, and a
 `GreenOpsController` resource pointed at a Flink job named `greenops-flink`.
 
-For a full local environment including Minikube, MinIO, the Flink operator, a
+For a full local environment including Minikube, SeaweedFS, the Flink operator, a
 sample Flink job and the monitoring stack:
 
 ```bash

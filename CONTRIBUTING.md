@@ -71,7 +71,7 @@ npm run build
 ### Running everything on a local cluster
 
 `scripts/setup.sh` builds the images and deploys the whole system to
-Minikube, including the Flink Kubernetes Operator, MinIO and a sample Flink
+Minikube, including the Flink Kubernetes Operator, SeaweedFS and a sample Flink
 job. It needs Docker, Minikube, kubectl, Helm, Java 17 and Maven. Set
 `MINIKUBE_HOME` if you keep Minikube's state somewhere other than the
 default. Then:

@@ -32,6 +32,6 @@ A useful report includes:
 ## Out of scope
 
 The manifests under `k8s/` and the `scripts/` that set up the local demo use
-fixed credentials for MinIO and Grafana on purpose, so the demo runs with no
-setup. They are for a local Minikube or kind cluster only and are not a
-vulnerability. Never use them anywhere else.
+fixed credentials for the SeaweedFS object store and Grafana on purpose, so
+the demo runs with no setup. They are for a local Minikube or kind cluster
+only and are not a vulnerability. Never use them anywhere else.

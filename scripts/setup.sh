@@ -4,8 +4,9 @@
 # Brings the whole system up on Minikube from a cold start:
 #   1. Ensures Minikube is running (with MINIKUBE_HOME on the external SSD).
 #   2. Builds all four local images into Minikube's docker daemon.
-#   3. Installs/upgrades Flink Kubernetes Operator + MinIO via Helm.
-#   4. Creates the MinIO bucket used by Flink for checkpoints/savepoints.
+#   3. Installs cert-manager and the Flink Kubernetes Operator, and deploys
+#      SeaweedFS as the S3 store for checkpoints and savepoints.
+#   4. Creates the bucket Flink writes checkpoints and savepoints to.
 #   5. Deploys telemetry, the GreenOps CRD/RBAC/operator/CR, the FlinkDeployment,
 #      and the dashboard.
 #   6. Waits for every rollout to be Ready.
@@ -27,9 +28,7 @@ cd "$REPO_ROOT"
 
 export MINIKUBE_HOME="${MINIKUBE_HOME:-/Volumes/SSD/dev/minikube}"
 NS="greenops"
-MINIO_USER="greenops"
-MINIO_PASSWORD="greenops123"
-MINIO_BUCKET="greenops"
+BUCKET="greenops"
 FLINK_OPERATOR_VERSION="1.14.0"
 CERT_MANAGER_VERSION="v1.16.0"
 
@@ -74,21 +73,18 @@ else
 fi
 
 
-# 3. Namespace + Helm infra (Flink operator, MinIO)
+# 3. Namespace, Flink operator and object store
 
 log "Applying namespace"
 kubectl apply -f k8s/namespace.yaml
 
-# MinIO reads its root credentials from this Secret via auth.existingSecret, and
-# the Flink pods read the same keys, so it has to exist before the Helm install.
+# SeaweedFS and the Flink pods both read their S3 credentials from this Secret,
+# so it has to exist before either starts.
 log "Applying object store credentials Secret"
-kubectl apply -f k8s/minio/object-store-secret.yaml
+kubectl apply -f k8s/object-store/secret.yaml
 
 helm repo add --force-update "flink-kubernetes-operator-$FLINK_OPERATOR_VERSION" \
   "https://archive.apache.org/dist/flink/flink-kubernetes-operator-$FLINK_OPERATOR_VERSION/" >/dev/null
-if ! helm repo list 2>/dev/null | grep -q '^bitnami'; then
-  helm repo add bitnami https://charts.bitnami.com/bitnami
-fi
 helm repo update >/dev/null
 
 log "Installing/upgrading cert-manager $CERT_MANAGER_VERSION (Flink operator dep)"
@@ -104,33 +100,20 @@ helm upgrade --install flink-kubernetes-operator \
   --namespace "$NS" --values k8s/flink/flink-operator-values.yaml \
   --wait --timeout 5m
 
-log "Installing/upgrading MinIO"
-helm upgrade --install minio bitnami/minio \
-  --namespace "$NS" --values k8s/minio/minio-values.yaml \
-  --wait --timeout 5m
+log "Deploying SeaweedFS object store"
+kubectl apply -f k8s/object-store/seaweedfs.yaml
+kubectl -n "$NS" rollout status deployment/seaweedfs --timeout=3m
 
 
-# 4. MinIO bucket
-# The chart's defaultBuckets setting creates the bucket on first start. Flink
-# cannot create it on demand, so verify rather than assume, and fall back to
-# creating it by hand if the chart did not.
-log "Verifying MinIO bucket '$MINIO_BUCKET' exists"
-MINIO_POD="$(kubectl get pod -n "$NS" -l app.kubernetes.io/name=minio -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
-if [[ -z "$MINIO_POD" ]]; then
-  MINIO_POD="$(kubectl get pod -n "$NS" -l app=minio -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
-fi
-
-if [[ -z "$MINIO_POD" ]]; then
-  warn "Could not locate a MinIO pod; skipping bucket verification"
+# 4. Bucket
+# Flink cannot create the bucket on demand, so create it before any job starts.
+log "Ensuring bucket '$BUCKET' exists"
+if kubectl exec -n "$NS" deploy/seaweedfs -- sh -c 'echo "s3.bucket.list" | weed shell' 2>/dev/null \
+    | grep -qw "$BUCKET"; then
+  log "Bucket '$BUCKET' present"
 else
-  kubectl exec -n "$NS" "$MINIO_POD" -- \
-    mc alias set local "http://localhost:9000" "$MINIO_USER" "$MINIO_PASSWORD" >/dev/null 2>&1 || true
-  if kubectl exec -n "$NS" "$MINIO_POD" -- mc ls "local/$MINIO_BUCKET" >/dev/null 2>&1; then
-    log "Bucket '$MINIO_BUCKET' present"
-  else
-    warn "Bucket '$MINIO_BUCKET' missing; creating it"
-    kubectl exec -n "$NS" "$MINIO_POD" -- mc mb -p "local/$MINIO_BUCKET" >/dev/null 2>&1 || true
-  fi
+  kubectl exec -n "$NS" deploy/seaweedfs -- sh -c "echo 's3.bucket.create -name $BUCKET' | weed shell" >/dev/null
+  log "Bucket '$BUCKET' created"
 fi
 
 
@@ -214,15 +197,10 @@ Useful next commands:
   kubectl port-forward -n $NS svc/greenops-grafana 3000:3000 &
   open http://localhost:3000
 
-  # Open MinIO console (user=$MINIO_USER pass=$MINIO_PASSWORD)
-  kubectl port-forward -n $NS svc/minio-console 9001:9001 &
-  open http://localhost:9001
-
   # Toggle grid state manually
   ./scripts/simulate-dirty-grid.sh
   ./scripts/simulate-clean-grid.sh
 
-  # Inspect savepoints in MinIO
-  kubectl exec -n $NS \$(kubectl get pod -n $NS -l app=minio -o name | head -1) -- \\
-    mc ls --recursive local/$MINIO_BUCKET/savepoints/
+  # Inspect savepoints in SeaweedFS
+  kubectl exec -n $NS deploy/seaweedfs -- sh -c 'echo "fs.ls -l /buckets/$BUCKET/savepoints" | weed shell'
 EOF
