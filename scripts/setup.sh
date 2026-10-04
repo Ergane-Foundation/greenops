@@ -2,7 +2,7 @@
 # GreenOps end-to-end bootstrap.
 #
 # Brings the whole system up on Minikube from a cold start:
-#   1. Ensures Minikube is running (with MINIKUBE_HOME on the external SSD).
+#   1. Ensures Minikube is running.
 #   2. Builds all four local images into Minikube's docker daemon.
 #   3. Installs cert-manager and the Flink Kubernetes Operator, and deploys
 #      SeaweedFS as the S3 store for checkpoints and savepoints.
@@ -15,7 +15,9 @@
 # Safe to re-run: every step is idempotent (kubectl apply / helm upgrade --install).
 #
 # Usage:   ./scripts/setup.sh
-# Env:     MINIKUBE_HOME (defaults to /Volumes/SSD/dev/minikube)
+# Env:     MINIKUBE_PROFILE (default minikube)
+#          MINIKUBE_CPUS, MINIKUBE_MEMORY (default max, i.e. all Docker allows)
+#          MINIKUBE_HOME is honoured if set, as minikube itself does
 #          SKIP_BUILD=1  → skip all docker builds
 #          SKIP_TEST=1   → skip the dirty/clean smoke test at the end
 
@@ -26,7 +28,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-export MINIKUBE_HOME="${MINIKUBE_HOME:-/Volumes/SSD/dev/minikube}"
+MINIKUBE_PROFILE="${MINIKUBE_PROFILE:-minikube}"
+MINIKUBE_CPUS="${MINIKUBE_CPUS:-max}"
+MINIKUBE_MEMORY="${MINIKUBE_MEMORY:-max}"
 NS="greenops"
 BUCKET="greenops"
 FLINK_OPERATOR_VERSION="1.14.0"
@@ -42,16 +46,22 @@ for bin in minikube kubectl docker helm mvn; do require "$bin"; done
 
 
 # 1. Minikube
-log "MINIKUBE_HOME = $MINIKUBE_HOME"
-if ! minikube status >/dev/null 2>&1; then
-  log "Starting Minikube..."
-  minikube start --driver=docker --cpus=4 --memory=8192
+DOCKER_MEM_MB=$(( $(docker info --format '{{.MemTotal}}') / 1024 / 1024 ))
+if (( DOCKER_MEM_MB < 6000 )); then
+  warn "Docker has ${DOCKER_MEM_MB}MB of memory; the full demo needs about 6GB and may be unstable"
+fi
+
+log "Minikube profile = $MINIKUBE_PROFILE"
+if ! minikube -p "$MINIKUBE_PROFILE" status >/dev/null 2>&1; then
+  log "Starting Minikube (cpus=$MINIKUBE_CPUS, memory=$MINIKUBE_MEMORY)..."
+  minikube start -p "$MINIKUBE_PROFILE" --driver=docker --cpus="$MINIKUBE_CPUS" --memory="$MINIKUBE_MEMORY"
 else
   log "Minikube already running."
 fi
 
 log "Pointing docker CLI at Minikube's daemon (eval minikube docker-env)"
-eval "$(minikube docker-env)"
+eval "$(minikube -p "$MINIKUBE_PROFILE" docker-env)"
+kubectl config use-context "$MINIKUBE_PROFILE" >/dev/null
 
 
 # 2. Images
