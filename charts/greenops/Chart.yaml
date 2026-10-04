@@ -9,8 +9,9 @@ keywords:
   - sustainability
   - flink
   - operator
-home: https://github.com/yash/green-ops
+home: https://github.com/ergane-foundation/greenops
 sources:
-  - https://github.com/yash/green-ops
+  - https://github.com/ergane-foundation/greenops
 maintainers:
-  - name: yash
+  - name: Yash Agarwal
+    url: https://github.com/yash-agarwa-l
