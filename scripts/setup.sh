@@ -175,18 +175,9 @@ if [[ "${SKIP_TEST:-0}" == "1" ]]; then
   warn "SKIP_TEST=1 — skipping dirty/clean smoke test"
 else
   log "=== SMOKE TEST: DIRTY GRID ==="
-  ./scripts/simulate-dirty-grid.sh
-  log "Waiting ~90s for savepoint + scale-down..."
-  sleep 90
-  kubectl get greenopscontrollers -n "$NS"
-  kubectl get deploy greenops-flink -n "$NS"
-
+  ./scripts/demo.sh dirty
   log "=== SMOKE TEST: CLEAN GRID ==="
-  ./scripts/simulate-clean-grid.sh
-  log "Waiting ~60s for scale-up..."
-  sleep 60
-  kubectl get greenopscontrollers -n "$NS"
-  kubectl get deploy greenops-flink -n "$NS"
+  ./scripts/demo.sh clean
 fi
 
 
