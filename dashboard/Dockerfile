@@ -1,4 +1,4 @@
-FROM node:20-alpine AS frontend
+FROM node:26-alpine AS frontend
 WORKDIR /build
 COPY package.json ./
 RUN npm install --no-audit --no-fund
