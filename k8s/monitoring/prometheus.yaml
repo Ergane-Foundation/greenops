@@ -1,22 +1,22 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: greenops-prometheus-config
-  namespace: greenops
+  name: solstice-prometheus-config
+  namespace: solstice
 data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
     scrape_configs:
-      - job_name: greenops-operator
+      - job_name: solstice-operator
         static_configs:
-          - targets: ['greenops-operator.greenops.svc.cluster.local:9400']
+          - targets: ['solstice-operator.solstice.svc.cluster.local:9400']
       - job_name: flink-operator
         kubernetes_sd_configs:
           - role: pod
             namespaces:
-              names: [greenops]
+              names: [solstice]
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
             regex: flink-kubernetes-operator
@@ -32,14 +32,14 @@ data:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: greenops-prometheus
-  namespace: greenops
+  name: solstice-prometheus
+  namespace: solstice
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: greenops-prometheus
-  namespace: greenops
+  name: solstice-prometheus
+  namespace: solstice
 rules:
   - apiGroups: [""]
     resources: ["pods", "services", "endpoints"]
@@ -48,35 +48,35 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: greenops-prometheus
-  namespace: greenops
+  name: solstice-prometheus
+  namespace: solstice
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: greenops-prometheus
+  name: solstice-prometheus
 subjects:
   - kind: ServiceAccount
-    name: greenops-prometheus
-    namespace: greenops
+    name: solstice-prometheus
+    namespace: solstice
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: greenops-prometheus
-  namespace: greenops
+  name: solstice-prometheus
+  namespace: solstice
   labels:
-    app: greenops-prometheus
+    app: solstice-prometheus
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: greenops-prometheus
+      app: solstice-prometheus
   template:
     metadata:
       labels:
-        app: greenops-prometheus
+        app: solstice-prometheus
     spec:
-      serviceAccountName: greenops-prometheus
+      serviceAccountName: solstice-prometheus
       containers:
         - name: prometheus
           image: prom/prometheus:v2.53.0
@@ -101,21 +101,21 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: greenops-prometheus-config
+            name: solstice-prometheus-config
         - name: data
           emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: greenops-prometheus
-  namespace: greenops
+  name: solstice-prometheus
+  namespace: solstice
   labels:
-    app: greenops-prometheus
+    app: solstice-prometheus
 spec:
   type: ClusterIP
   selector:
-    app: greenops-prometheus
+    app: solstice-prometheus
   ports:
     - name: http
       port: 9090

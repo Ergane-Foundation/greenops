@@ -49,7 +49,7 @@ body:
     id: logs
     attributes:
       label: Logs and status
-      description: Output of `make status` and the relevant operator logs (`kubectl logs deploy/greenops-operator -n greenops`).
+      description: Output of `make status` and the relevant operator logs (`kubectl logs deploy/solstice-operator -n solstice`).
       render: shell
   - type: input
     id: version

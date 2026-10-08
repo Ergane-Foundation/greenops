@@ -1,0 +1,30 @@
+{{- if .Values.controller.create }}
+apiVersion: solstice.io/v1
+kind: SolsticeController
+metadata:
+  name: {{ .Values.controller.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "solstice.labels" . | nindent 4 }}
+spec:
+  carbonThreshold: {{ .Values.controller.carbonThreshold }}
+  cooperativeSuspension: {{ .Values.controller.cooperativeSuspension }}
+  nodePowerWatts: {{ .Values.controller.nodePowerWatts }}
+  flinkJobName: {{ .Values.controller.flinkJobName }}
+  flinkNamespace: {{ include "solstice.flinkNamespace" . }}
+  telemetryEndpoint: {{ include "solstice.telemetryEndpoint" . | quote }}
+  flinkRestEndpoint: {{ include "solstice.flinkRestEndpoint" . | quote }}
+  savepointDirectory: {{ .Values.controller.savepointDirectory | quote }}
+  savepointTimeoutSeconds: {{ .Values.controller.savepointTimeoutSeconds }}
+  schedulingPolicy: {{ .Values.controller.schedulingPolicy }}
+  costPredictor: {{ .Values.controller.costPredictor }}
+  breakEvenMultiplier: {{ .Values.controller.breakEvenMultiplier }}
+  assumedSavepointSeconds: {{ .Values.controller.assumedSavepointSeconds }}
+  assumedRestartSeconds: {{ .Values.controller.assumedRestartSeconds }}
+  maxConcurrentSuspensions: {{ .Values.controller.maxConcurrentSuspensions }}
+  forecastEndpoint: {{ include "solstice.forecastEndpoint" . | quote }}
+  {{- if .Values.controller.jobSelector }}
+  jobSelector:
+    {{- toYaml .Values.controller.jobSelector | nindent 4 }}
+  {{- end }}
+{{- end }}

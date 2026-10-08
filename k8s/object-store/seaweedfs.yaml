@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: seaweedfs-data
-  namespace: greenops
+  namespace: solstice
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -13,7 +13,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: seaweedfs
-  namespace: greenops
+  namespace: solstice
   labels:
     app: seaweedfs
 spec:
@@ -44,12 +44,12 @@ spec:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: greenops-object-store
+                  name: solstice-object-store
                   key: accessKey
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: greenops-object-store
+                  name: solstice-object-store
                   key: secretKey
           ports:
             - name: s3
@@ -77,7 +77,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: seaweedfs
-  namespace: greenops
+  namespace: solstice
   labels:
     app: seaweedfs
 spec:

@@ -1,0 +1,176 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: solsticecontrollers.solstice.io
+spec:
+  group: solstice.io
+  scope: Namespaced
+  names:
+    plural: solsticecontrollers
+    singular: solsticecontroller
+    kind: SolsticeController
+    shortNames:
+      - gopsc
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [flinkJobName, flinkNamespace, telemetryEndpoint]
+              properties:
+                carbonThreshold:
+                  type: integer
+                  default: 400
+                flinkJobName:
+                  type: string
+                jobSelector:
+                  type: object
+                  additionalProperties:
+                    type: string
+                flinkNamespace:
+                  type: string
+                telemetryEndpoint:
+                  type: string
+                forecastEndpoint:
+                  type: string
+                cooperativeSuspension:
+                  type: boolean
+                  default: true
+                  description: >-
+                    Suspend by patching FlinkDeployment.spec.job.state so the
+                    Flink Kubernetes Operator takes the savepoint and shuts the
+                    cluster down itself. Disable only where no FlinkDeployment
+                    owns the target, in which case the operator triggers a
+                    savepoint over REST and scales the Deployment directly.
+                nodePowerWatts:
+                  type: number
+                  default: 250
+                schedulingPolicy:
+                  type: string
+                  enum: [threshold, forecast, optimising]
+                  default: threshold
+                costPredictor:
+                  type: string
+                  enum: [static, observed, regression]
+                  default: static
+                assumedSavepointSeconds:
+                  type: integer
+                  default: 60
+                assumedRestartSeconds:
+                  type: integer
+                  default: 120
+                breakEvenMultiplier:
+                  type: number
+                  default: 2.0
+                maxConcurrentSuspensions:
+                  type: integer
+                  default: 0
+                flinkRestEndpoint:
+                  type: string
+                savepointDirectory:
+                  type: string
+                  default: "s3://solstice/savepoints"
+                savepointTimeoutSeconds:
+                  type: integer
+                  default: 300
+            status:
+              type: object
+              properties:
+                gridStatus:
+                  type: string
+                carbonIntensity:
+                  type: integer
+                lastAction:
+                  type: string
+                lastReconciledAt:
+                  type: string
+                savepointPhase:
+                  type: string
+                lastSavepointPath:
+                  type: string
+                lastSavepointAt:
+                  type: string
+                lastError:
+                  type: string
+                decisionReason:
+                  type: string
+                activePolicy:
+                  type: string
+                managedJobCount:
+                  type: integer
+                costHistory:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      jobName:
+                        type: string
+                      observedAt:
+                        type: string
+                      savepointSeconds:
+                        type: integer
+                      restartSeconds:
+                        type: integer
+                      stateSizeBytes:
+                        type: integer
+                      parallelism:
+                        type: integer
+                jobs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      state:
+                        type: string
+                      priority:
+                        type: integer
+                      lastAction:
+                        type: string
+                      lastSavepointPath:
+                        type: string
+                forecastSource:
+                  type: string
+                forecastHorizonHours:
+                  type: integer
+                nextDirtyWindowStart:
+                  type: string
+                nextDirtyWindowEnd:
+                  type: string
+                nextDirtyWindowPeak:
+                  type: integer
+      additionalPrinterColumns:
+        - name: Grid
+          type: string
+          jsonPath: .status.gridStatus
+        - name: Carbon
+          type: integer
+          jsonPath: .status.carbonIntensity
+        - name: Action
+          type: string
+          jsonPath: .status.lastAction
+        - name: Savepoint
+          type: string
+          jsonPath: .status.savepointPhase
+        - name: Jobs
+          type: integer
+          jsonPath: .status.managedJobCount
+        - name: Policy
+          type: string
+          priority: 1
+          jsonPath: .status.activePolicy
+        - name: Reason
+          type: string
+          priority: 1
+          jsonPath: .status.decisionReason
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

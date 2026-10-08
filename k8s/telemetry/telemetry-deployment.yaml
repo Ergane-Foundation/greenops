@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: greenops-telemetry
-  namespace: greenops
+  name: solstice-telemetry
+  namespace: solstice
   labels:
-    app: greenops-telemetry
+    app: solstice-telemetry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: greenops-telemetry
+      app: solstice-telemetry
   template:
     metadata:
       labels:
-        app: greenops-telemetry
+        app: solstice-telemetry
     spec:
       containers:
         - name: telemetry
-          image: greenops/telemetry:latest
+          image: solstice/telemetry:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
@@ -42,14 +42,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: greenops-telemetry
-  namespace: greenops
+  name: solstice-telemetry
+  namespace: solstice
   labels:
-    app: greenops-telemetry
+    app: solstice-telemetry
 spec:
   type: ClusterIP
   selector:
-    app: greenops-telemetry
+    app: solstice-telemetry
   ports:
     - name: http
       port: 8080

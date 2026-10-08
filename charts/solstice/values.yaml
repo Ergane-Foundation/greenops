@@ -1,0 +1,60 @@
+operator:
+  image:
+    repository: solstice/operator
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  metricsPort: 9400
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: solstice-operator
+
+crd:
+  install: true
+
+controller:
+  create: true
+  name: solstice-flink-controller
+  carbonThreshold: 400
+  cooperativeSuspension: true
+  nodePowerWatts: 250
+  schedulingPolicy: threshold
+  costPredictor: static
+  breakEvenMultiplier: 2.0
+  assumedSavepointSeconds: 60
+  assumedRestartSeconds: 120
+  maxConcurrentSuspensions: 0
+  jobSelector: {}
+  flinkJobName: solstice-flink
+  flinkNamespace: ""
+  telemetryEndpoint: ""
+  flinkRestEndpoint: ""
+  savepointDirectory: s3://solstice/savepoints
+  savepointTimeoutSeconds: 300
+
+telemetry:
+  enabled: true
+  image:
+    repository: solstice/telemetry
+    tag: latest
+    pullPolicy: IfNotPresent
+  zone: IN-NO
+  carbonThreshold: 400
+  existingSecret: ""
+  tokenKey: token
+
+metrics:
+  service:
+    enabled: true
+    port: 9400

@@ -5,8 +5,8 @@
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.greenops</groupId>
-    <artifactId>greenops-operator</artifactId>
+    <groupId>com.solstice</groupId>
+    <artifactId>solstice-operator</artifactId>
     <version>0.1.0</version>
     <packaging>jar</packaging>
 
@@ -85,7 +85,7 @@
     </dependencies>
 
     <build>
-        <finalName>greenops-operator</finalName>
+        <finalName>solstice-operator</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -103,7 +103,7 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.greenops.GreenOpsOperator</mainClass>
+                                    <mainClass>com.solstice.SolsticeOperator</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

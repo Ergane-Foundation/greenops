@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solstice-operator
+  namespace: solstice
+  labels:
+    app: solstice-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: solstice-operator
+  template:
+    metadata:
+      labels:
+        app: solstice-operator
+    spec:
+      serviceAccountName: solstice-operator
+      containers:
+        - name: operator
+          image: solstice/operator:latest
+          imagePullPolicy: Never
+          ports:
+            - name: metrics
+              containerPort: 9400
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx256m"
+            - name: METRICS_PORT
+              value: "9400"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: solstice-operator
+  namespace: solstice
+  labels:
+    app: solstice-operator
+spec:
+  type: ClusterIP
+  selector:
+    app: solstice-operator
+  ports:
+    - name: metrics
+      port: 9400
+      targetPort: 9400

@@ -1,4 +1,4 @@
-PROFILE ?= greenops
+PROFILE ?= solstice
 CPUS ?= max
 MEMORY ?= max
 
@@ -35,8 +35,8 @@ demo-clean: context
 	./scripts/demo.sh clean
 
 status: context
-	kubectl get greenopscontrollers,flinkdeployments -n greenops
-	kubectl get pods -n greenops
+	kubectl get solsticecontrollers,flinkdeployments -n solstice
+	kubectl get pods -n solstice
 
 test:
 	mvn -f operator/pom.xml verify

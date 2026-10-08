@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-GreenOps has not had a stable release yet. Security fixes are made on the
+Solstice has not had a stable release yet. Security fixes are made on the
 `main` branch only.
 
 ## Reporting a vulnerability

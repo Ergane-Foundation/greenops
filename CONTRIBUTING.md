@@ -1,9 +1,9 @@
-# Contributing to GreenOps
+# Contributing to Solstice
 
 Thanks for helping. This guide covers how to get set up, how changes are
 made, and what happens after you open a pull request.
 
-Questions are welcome on the [GreenOps Discord](https://discord.gg/gZTJfUujX).
+Questions are welcome on the [Solstice Discord](https://discord.gg/gZTJfUujX).
 Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 Security problems go through [SECURITY.md](SECURITY.md), never a public issue.
 
@@ -19,7 +19,7 @@ want to change, so the approach can be agreed before you write the code.
 
 ## The one rule that matters
 
-GreenOps exists to suspend stateful Flink jobs without losing their state. A
+Solstice exists to suspend stateful Flink jobs without losing their state. A
 job must never be suspended unless its state has been captured first, and must
 never be resumed from anything other than its own savepoint.
 
@@ -77,8 +77,8 @@ least 6GB of memory.
 make up
 ```
 
-This creates a Minikube profile called `greenops`, builds the images, deploys
-the Flink Kubernetes Operator, SeaweedFS, the GreenOps operator and a sample
+This creates a Minikube profile called `solstice`, builds the images, deploys
+the Flink Kubernetes Operator, SeaweedFS, the Solstice operator and a sample
 Flink job, and finishes with a smoke test that suspends the job and resumes
 it from its savepoint. The first run takes around 20 minutes.
 
@@ -92,7 +92,7 @@ it from its savepoint. The first run takes around 20 minutes.
 | `make teardown` | Delete the cluster |
 
 `PROFILE`, `CPUS` and `MEMORY` change the Minikube profile and its size, for
-example `make up PROFILE=greenops-dev MEMORY=8g`.
+example `make up PROFILE=solstice-dev MEMORY=8g`.
 
 ## Making a change
 
@@ -146,5 +146,5 @@ be accepted, we will say so and explain why rather than leave it open.
 
 ## Licence
 
-GreenOps is licensed under the [Apache License 2.0](LICENSE). By contributing,
+Solstice is licensed under the [Apache License 2.0](LICENSE). By contributing,
 you agree that your contributions are licensed under the same terms.

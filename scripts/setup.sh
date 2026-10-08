@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GreenOps end-to-end bootstrap.
+# Solstice end-to-end bootstrap.
 #
 # Brings the whole system up on Minikube from a cold start:
 #   1. Ensures Minikube is running.
@@ -7,7 +7,7 @@
 #   3. Installs cert-manager and the Flink Kubernetes Operator, and deploys
 #      SeaweedFS as the S3 store for checkpoints and savepoints.
 #   4. Creates the bucket Flink writes checkpoints and savepoints to.
-#   5. Deploys telemetry, the GreenOps CRD/RBAC/operator/CR, the FlinkDeployment,
+#   5. Deploys telemetry, the Solstice CRD/RBAC/operator/CR, the FlinkDeployment,
 #      and the dashboard.
 #   6. Waits for every rollout to be Ready.
 #   7. Runs the dirty-grid → clean-grid smoke test.
@@ -31,8 +31,8 @@ cd "$REPO_ROOT"
 MINIKUBE_PROFILE="${MINIKUBE_PROFILE:-minikube}"
 MINIKUBE_CPUS="${MINIKUBE_CPUS:-max}"
 MINIKUBE_MEMORY="${MINIKUBE_MEMORY:-max}"
-NS="greenops"
-BUCKET="greenops"
+NS="solstice"
+BUCKET="solstice"
 FLINK_OPERATOR_VERSION="1.14.0"
 CERT_MANAGER_VERSION="v1.16.0"
 
@@ -71,15 +71,15 @@ else
   log "Building flink-s3:1.19"
   docker build -f Dockerfile.flink -t flink-s3:1.19 .
 
-  log "Building greenops/telemetry:latest"
-  docker build -t greenops/telemetry:latest ./telemetry
+  log "Building solstice/telemetry:latest"
+  docker build -t solstice/telemetry:latest ./telemetry
 
-  log "Building greenops/operator:latest (mvn package + docker build)"
+  log "Building solstice/operator:latest (mvn package + docker build)"
   mvn -q -f operator/pom.xml clean package
-  docker build -t greenops/operator:latest ./operator
+  docker build -t solstice/operator:latest ./operator
 
-  log "Building greenops/dashboard:latest"
-  docker build -t greenops/dashboard:latest ./dashboard
+  log "Building solstice/dashboard:latest"
+  docker build -t solstice/dashboard:latest ./dashboard
 fi
 
 
@@ -134,40 +134,40 @@ kubectl apply -f k8s/flink/flink-cluster.yaml
 log "Applying telemetry"
 kubectl apply -f k8s/telemetry/telemetry-deployment.yaml
 
-log "Applying GreenOps CRD + RBAC + operator"
-kubectl apply -f k8s/greenops/greenops-crd.yaml
-kubectl apply -f k8s/greenops/greenops-rbac.yaml
-kubectl apply -f k8s/greenops/greenops-deployment.yaml
+log "Applying Solstice CRD + RBAC + operator"
+kubectl apply -f k8s/solstice/solstice-crd.yaml
+kubectl apply -f k8s/solstice/solstice-rbac.yaml
+kubectl apply -f k8s/solstice/solstice-deployment.yaml
 
 log "Applying dashboard"
 kubectl apply -f k8s/dashboard/dashboard-deployment.yaml
 
 log "Applying monitoring stack"
-kubectl create configmap greenops-grafana-dashboards \
-  --from-file=greenops-dashboard.json=grafana/greenops-dashboard.json \
+kubectl create configmap solstice-grafana-dashboards \
+  --from-file=solstice-dashboard.json=grafana/solstice-dashboard.json \
   -n "$NS" --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f k8s/monitoring/prometheus.yaml
 kubectl apply -f k8s/monitoring/grafana.yaml
 
-log "Applying GreenOpsController CR"
-kubectl apply -f k8s/greenops/greenops-cr.yaml
+log "Applying SolsticeController CR"
+kubectl apply -f k8s/solstice/solstice-cr.yaml
 
 # Pick up new images if the deployments already existed
-kubectl -n "$NS" rollout restart deployment/greenops-telemetry deployment/greenops-operator deployment/greenops-dashboard >/dev/null
+kubectl -n "$NS" rollout restart deployment/solstice-telemetry deployment/solstice-operator deployment/solstice-dashboard >/dev/null
 
 
 # 6. Wait for rollouts
 log "Waiting for rollouts..."
-kubectl -n "$NS" rollout status deployment/greenops-telemetry --timeout=3m
-kubectl -n "$NS" rollout status deployment/greenops-operator  --timeout=3m
-kubectl -n "$NS" rollout status deployment/greenops-dashboard --timeout=3m
-kubectl -n "$NS" rollout status deployment/greenops-prometheus --timeout=3m
-kubectl -n "$NS" rollout status deployment/greenops-grafana    --timeout=3m
-kubectl -n "$NS" rollout status deployment/greenops-flink     --timeout=5m
+kubectl -n "$NS" rollout status deployment/solstice-telemetry --timeout=3m
+kubectl -n "$NS" rollout status deployment/solstice-operator  --timeout=3m
+kubectl -n "$NS" rollout status deployment/solstice-dashboard --timeout=3m
+kubectl -n "$NS" rollout status deployment/solstice-prometheus --timeout=3m
+kubectl -n "$NS" rollout status deployment/solstice-grafana    --timeout=3m
+kubectl -n "$NS" rollout status deployment/solstice-flink     --timeout=5m
 
 log "Cluster state:"
 kubectl get pods -n "$NS"
-kubectl get greenopscontrollers -n "$NS"
+kubectl get solsticecontrollers -n "$NS"
 
 
 # 7. Smoke test: dirty → clean
@@ -184,18 +184,18 @@ fi
 # Done
 cat <<EOF
 
-\033[1;32m✓ GreenOps is up.\033[0m
+\033[1;32m✓ Solstice is up.\033[0m
 
 Useful next commands:
   # Follow operator logs
-  kubectl logs -f deployment/greenops-operator -n $NS
+  kubectl logs -f deployment/solstice-operator -n $NS
 
   # Open the dashboard
-  kubectl port-forward -n $NS svc/greenops-dashboard 8000:8000 &
+  kubectl port-forward -n $NS svc/solstice-dashboard 8000:8000 &
   open http://localhost:8000
 
   # Open Grafana (anonymous viewer is enabled)
-  kubectl port-forward -n $NS svc/greenops-grafana 3000:3000 &
+  kubectl port-forward -n $NS svc/solstice-grafana 3000:3000 &
   open http://localhost:3000
 
   # Toggle grid state manually

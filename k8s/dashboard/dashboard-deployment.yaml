@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: greenops-dashboard
-  namespace: greenops
+  name: solstice-dashboard
+  namespace: solstice
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: greenops-dashboard
+  name: solstice-dashboard
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -15,54 +15,54 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["greenops.io"]
-    resources: ["greenopscontrollers", "greenopscontrollers/status"]
+  - apiGroups: ["solstice.io"]
+    resources: ["solsticecontrollers", "solsticecontrollers/status"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: greenops-dashboard
+  name: solstice-dashboard
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: greenops-dashboard
+  name: solstice-dashboard
 subjects:
   - kind: ServiceAccount
-    name: greenops-dashboard
-    namespace: greenops
+    name: solstice-dashboard
+    namespace: solstice
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: greenops-dashboard
-  namespace: greenops
+  name: solstice-dashboard
+  namespace: solstice
   labels:
-    app: greenops-dashboard
+    app: solstice-dashboard
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: greenops-dashboard
+      app: solstice-dashboard
   template:
     metadata:
       labels:
-        app: greenops-dashboard
+        app: solstice-dashboard
     spec:
-      serviceAccountName: greenops-dashboard
+      serviceAccountName: solstice-dashboard
       containers:
         - name: dashboard
-          image: greenops/dashboard:latest
+          image: solstice/dashboard:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:
-            - name: GREENOPS_NAMESPACE
-              value: "greenops"
+            - name: SOLSTICE_NAMESPACE
+              value: "solstice"
             - name: TELEMETRY_URL
-              value: "http://greenops-telemetry.greenops.svc.cluster.local:8080/telemetry/status"
+              value: "http://solstice-telemetry.solstice.svc.cluster.local:8080/telemetry/status"
             - name: CONTROLLER_NAME
-              value: "greenops-flink-controller"
+              value: "solstice-flink-controller"
           readinessProbe:
             httpGet: { path: /healthz, port: 8000 }
             initialDelaySeconds: 3
@@ -75,14 +75,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: greenops-dashboard
-  namespace: greenops
+  name: solstice-dashboard
+  namespace: solstice
   labels:
-    app: greenops-dashboard
+    app: solstice-dashboard
 spec:
   type: ClusterIP
   selector:
-    app: greenops-dashboard
+    app: solstice-dashboard
   ports:
     - name: http
       port: 8000

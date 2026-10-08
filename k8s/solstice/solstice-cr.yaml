@@ -1,0 +1,15 @@
+apiVersion: solstice.io/v1
+kind: SolsticeController
+metadata:
+  name: solstice-flink-controller
+  namespace: solstice
+spec:
+  carbonThreshold: 400
+  flinkJobName: solstice-flink
+  flinkNamespace: solstice
+  cooperativeSuspension: true
+  telemetryEndpoint: "http://solstice-telemetry.solstice.svc.cluster.local:8080/telemetry/status"
+  forecastEndpoint: "http://solstice-telemetry.solstice.svc.cluster.local:8080/telemetry/forecast"
+  flinkRestEndpoint: "http://solstice-flink-rest.solstice.svc.cluster.local:8081"
+  savepointDirectory: "s3://solstice/savepoints"
+  savepointTimeoutSeconds: 300

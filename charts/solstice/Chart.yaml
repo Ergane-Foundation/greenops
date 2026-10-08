@@ -1,0 +1,17 @@
+apiVersion: v2
+name: solstice
+description: Carbon aware suspension for stateful Apache Flink clusters
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - carbon
+  - sustainability
+  - flink
+  - operator
+home: https://github.com/Ergane-Foundation/solstice
+sources:
+  - https://github.com/Ergane-Foundation/solstice
+maintainers:
+  - name: Yash Agarwal
+    url: https://github.com/yash-agarwa-l

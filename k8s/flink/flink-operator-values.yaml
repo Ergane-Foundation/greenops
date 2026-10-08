@@ -1,5 +1,5 @@
 watchNamespaces:
-  - greenops
+  - solstice
 
 operatorHealth:
   port: 8085

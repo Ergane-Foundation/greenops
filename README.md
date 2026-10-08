@@ -1,8 +1,8 @@
-# GreenOps
+# Solstice
 
 Carbon aware suspension for stateful Apache Flink clusters.
 
-GreenOps watches the carbon intensity of the grid powering your cluster. When
+Solstice watches the carbon intensity of the grid powering your cluster. When
 the grid turns dirty it suspends the Flink job, and when the grid comes back
 clean it resumes the job from the savepoint taken on the way down. The job
 picks up where it left off rather than starting over.
@@ -18,7 +18,7 @@ savepoint.** [Safety](#safety) lists exactly how that is enforced.
 
 ## Project status
 
-GreenOps is an early stage project, maintained by the Ergane Foundation and not
+Solstice is an early stage project, maintained by the Ergane Foundation and not
 yet released. The suspend and resume lifecycle is built and has been run end to
 end on a local cluster. Nothing has run in production. Expect the custom
 resource and configuration to change before a first release.
@@ -28,12 +28,12 @@ resource and configuration to change before a first release.
 Carbon aware scaling is straightforward for stateless and batch workloads,
 which is where most existing tooling points. Stream processors are the awkward
 case, because stopping one carelessly throws away in flight windowed state and
-breaks exactly once processing. GreenOps handles that case.
+breaks exactly once processing. Solstice handles that case.
 
 ## How it works
 
 ```
-Electricity Maps ──▶ Telemetry ──▶ GreenOps operator ──▶ FlinkDeployment
+Electricity Maps ──▶ Telemetry ──▶ Solstice operator ──▶ FlinkDeployment
                                           │                     │
                                           │                     ▼
                                           │          Flink Kubernetes Operator
@@ -56,7 +56,7 @@ change made behind its back.
 
 ## Safety
 
-| Situation | What GreenOps does |
+| Situation | What Solstice does |
 | --- | --- |
 | FlinkDeployment's `upgradeMode` is not `savepoint` | Does not suspend it. Flink would stop it without a savepoint. |
 | Suspend requested | Reports the savepoint `REQUESTED`, then `COMPLETED` once Flink reports the job suspended, or `FAILED` if Flink reports an error |
@@ -70,14 +70,14 @@ You need Docker with at least 6GB of memory, Minikube, kubectl, Helm, Java 17,
 Maven and `make`.
 
 ```bash
-git clone https://github.com/Ergane-Foundation/greenops.git
-cd greenops
+git clone https://github.com/Ergane-Foundation/solstice.git
+cd solstice
 make up
 ```
 
-`make up` creates a Minikube profile called `greenops`, builds the images,
+`make up` creates a Minikube profile called `solstice`, builds the images,
 installs cert-manager and the Flink Kubernetes Operator, deploys SeaweedFS as
-the S3 store, the GreenOps operator, the telemetry service, a sample Flink job,
+the S3 store, the Solstice operator, the telemetry service, a sample Flink job,
 Prometheus and Grafana, and finishes with a smoke test. The first run takes
 around 20 minutes, most of it downloading images.
 
@@ -98,23 +98,23 @@ not:
 [demo] Grid set to dirty
 [demo] Waiting for a new savepoint to complete (up to 300s)
 [demo] Waiting for Flink to report the job suspended (up to 300s)
-[demo] Suspended with savepoint s3://greenops/savepoints/savepoint-44b668-aeecd7642e07
+[demo] Suspended with savepoint s3://solstice/savepoints/savepoint-44b668-aeecd7642e07
 [demo] Grid set to clean
 [demo] Waiting for the job to be running (up to 300s)
-[demo] Waiting for Flink to restore from s3://greenops/savepoints/savepoint-44b668-aeecd7642e07 (up to 300s)
-[demo] Resumed from savepoint s3://greenops/savepoints/savepoint-44b668-aeecd7642e07
+[demo] Waiting for Flink to restore from s3://solstice/savepoints/savepoint-44b668-aeecd7642e07 (up to 300s)
+[demo] Resumed from savepoint s3://solstice/savepoints/savepoint-44b668-aeecd7642e07
 ```
 
-The restore is confirmed from Flink's own JobManager log, not from GreenOps.
+The restore is confirmed from Flink's own JobManager log, not from Solstice.
 Current state is visible without digging through logs:
 
 ```bash
-kubectl get greenopscontrollers -n greenops
+kubectl get solsticecontrollers -n solstice
 ```
 
 ```
 NAME                        GRID    CARBON   ACTION              SAVEPOINT   JOBS   AGE
-greenops-flink-controller   DIRTY   850      ALREADY_SUSPENDED   COMPLETED   1      4m
+solstice-flink-controller   DIRTY   850      ALREADY_SUSPENDED   COMPLETED   1      4m
 ```
 
 `make status` adds the Flink job and the pods, and `make help` lists the other
@@ -123,21 +123,21 @@ targets.
 ## Install with Helm
 
 ```bash
-helm install greenops ./charts/greenops --namespace greenops --create-namespace
+helm install solstice ./charts/solstice --namespace solstice --create-namespace
 ```
 
 The chart installs the CRD, the operator, the telemetry service and a
-`GreenOpsController` pointed at a Flink job named `greenops-flink`. It expects
+`SolsticeController` pointed at a Flink job named `solstice-flink`. It expects
 the Flink Kubernetes Operator, an S3 store and your FlinkDeployments to exist
 already.
 
-Images are not published yet. The chart uses `greenops/operator:latest` and
-`greenops/telemetry:latest`, which you have to build into your cluster first,
+Images are not published yet. The chart uses `solstice/operator:latest` and
+`solstice/telemetry:latest`, which you have to build into your cluster first,
 as `make up` does.
 
 ## Configuration
 
-Fields on the `GreenOpsController` resource:
+Fields on the `SolsticeController` resource:
 
 | Field | Default | Description |
 | --- | --- | --- |
@@ -156,7 +156,7 @@ Fields on the `GreenOpsController` resource:
 | `assumedRestartSeconds` | `120` | Restart duration before anything has been measured |
 | `maxConcurrentSuspensions` | `0` | How many jobs may be suspended together, 0 for no limit |
 | `flinkRestEndpoint` | | Flink REST API, used only in non cooperative mode |
-| `savepointDirectory` | `s3://greenops/savepoints` | Where savepoints go, used only in non cooperative mode |
+| `savepointDirectory` | `s3://solstice/savepoints` | Where savepoints go, used only in non cooperative mode |
 | `savepointTimeoutSeconds` | `300` | How long to wait for a savepoint, used only in non cooperative mode |
 
 Each managed FlinkDeployment must set `spec.job.upgradeMode: savepoint`. It can
@@ -164,9 +164,9 @@ also carry these annotations:
 
 | Annotation | Meaning |
 | --- | --- |
-| `greenops.io/priority` | Orders the jobs on the status. It does not yet affect which job is suspended. |
-| `greenops.io/max-suspension-seconds` | Declines a suspension the forecast says would last longer than this |
-| `greenops.io/state-size-bytes` | State size, used by the `regression` predictor |
+| `solstice.io/priority` | Orders the jobs on the status. It does not yet affect which job is suspended. |
+| `solstice.io/max-suspension-seconds` | Declines a suspension the forecast says would last longer than this |
+| `solstice.io/state-size-bytes` | State size, used by the `regression` predictor |
 
 ## Scheduling policies
 
@@ -199,7 +199,7 @@ worse. Reproduce with:
 
 ```bash
 make test
-java -cp operator/target/greenops-operator.jar com.greenops.evaluation.EvaluationRunner
+java -cp operator/target/solstice-operator.jar com.solstice.evaluation.EvaluationRunner
 ```
 
 ## Cost prediction
@@ -227,7 +227,7 @@ These come from synthetic observations, not a live cluster. Reproduce with
 `mvn -f operator/pom.xml test -Dtest=PredictorEvaluatorTest`.
 
 On a live cluster the recorded durations are not yet accurate. The timer stops
-on the first reconcile after GreenOps patches the job, so each observation is
+on the first reconcile after Solstice patches the job, so each observation is
 roughly the 60 second reconcile interval rather than the real savepoint or
 restart time. Until that is fixed, use `static`.
 
@@ -246,17 +246,17 @@ The operator serves Prometheus metrics on port 9400.
 
 | Metric | Type | Description |
 | --- | --- | --- |
-| `greenops_carbon_intensity_gco2_kwh` | gauge | Last reading from telemetry |
-| `greenops_carbon_threshold_gco2_kwh` | gauge | Configured threshold |
-| `greenops_grid_dirty` | gauge | 1 when the grid is dirty |
-| `greenops_job_suspended` | gauge | 1 while Flink reports the job suspended |
-| `greenops_suspension_seconds_total` | counter | Time each job spent suspended |
-| `greenops_carbon_avoided_grams_total` | counter | Estimated CO2 avoided per job |
-| `greenops_savepoint_duration_seconds` | histogram | Savepoint timings |
-| `greenops_savepoint_total` | counter | Savepoint phase changes by result |
-| `greenops_reconcile_total` | counter | Reconciles by action taken |
+| `solstice_carbon_intensity_gco2_kwh` | gauge | Last reading from telemetry |
+| `solstice_carbon_threshold_gco2_kwh` | gauge | Configured threshold |
+| `solstice_grid_dirty` | gauge | 1 when the grid is dirty |
+| `solstice_job_suspended` | gauge | 1 while Flink reports the job suspended |
+| `solstice_suspension_seconds_total` | counter | Time each job spent suspended |
+| `solstice_carbon_avoided_grams_total` | counter | Estimated CO2 avoided per job |
+| `solstice_savepoint_duration_seconds` | histogram | Savepoint timings |
+| `solstice_savepoint_total` | counter | Savepoint phase changes by result |
+| `solstice_reconcile_total` | counter | Reconciles by action taken |
 
-A Grafana dashboard is included at `grafana/greenops-dashboard.json` and is
+A Grafana dashboard is included at `grafana/solstice-dashboard.json` and is
 provisioned automatically by `make up`.
 
 The carbon figure is an estimate, not a measurement. It multiplies the time a
@@ -280,7 +280,7 @@ number, and set `nodePowerWatts` to something reasonable for your hardware.
 - The default `threshold` policy has no hysteresis or minimum suspension time,
   so an intensity hovering at the threshold suspends and resumes repeatedly.
   The `forecast` policy avoids this when a forecast is available.
-- The operator's permissions are cluster wide, and a `GreenOpsController` can
+- The operator's permissions are cluster wide, and a `SolsticeController` can
   point at FlinkDeployments in any namespace. Run it only where everyone who can
   create one is trusted.
 - The optimiser ranks jobs greedily. At a few dozen jobs the difference from an
@@ -316,7 +316,7 @@ above, and any change to the suspend or resume path must keep them passing.
 
 ## Licence
 
-GreenOps is licensed under the [Apache License 2.0](LICENSE).
+Solstice is licensed under the [Apache License 2.0](LICENSE).
 
 The local demo also runs third party software as separate, unmodified
 containers, under their own licences: SeaweedFS (Apache 2.0), the Flink

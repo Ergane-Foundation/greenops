@@ -1,31 +1,31 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: greenops-grafana-datasources
-  namespace: greenops
+  name: solstice-grafana-datasources
+  namespace: solstice
 data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
       - name: Prometheus
-        uid: greenops-prometheus
+        uid: solstice-prometheus
         type: prometheus
         access: proxy
-        url: http://greenops-prometheus.greenops.svc.cluster.local:9090
+        url: http://solstice-prometheus.solstice.svc.cluster.local:9090
         isDefault: true
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: greenops-grafana-dashboard-provider
-  namespace: greenops
+  name: solstice-grafana-dashboard-provider
+  namespace: solstice
 data:
   dashboards.yaml: |
     apiVersion: 1
     providers:
-      - name: greenops
+      - name: solstice
         orgId: 1
-        folder: GreenOps
+        folder: Solstice
         type: file
         disableDeletion: false
         updateIntervalSeconds: 30
@@ -35,19 +35,19 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: greenops-grafana
-  namespace: greenops
+  name: solstice-grafana
+  namespace: solstice
   labels:
-    app: greenops-grafana
+    app: solstice-grafana
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: greenops-grafana
+      app: solstice-grafana
   template:
     metadata:
       labels:
-        app: greenops-grafana
+        app: solstice-grafana
     spec:
       containers:
         - name: grafana
@@ -80,25 +80,25 @@ spec:
       volumes:
         - name: datasources
           configMap:
-            name: greenops-grafana-datasources
+            name: solstice-grafana-datasources
         - name: dashboard-provider
           configMap:
-            name: greenops-grafana-dashboard-provider
+            name: solstice-grafana-dashboard-provider
         - name: dashboards
           configMap:
-            name: greenops-grafana-dashboards
+            name: solstice-grafana-dashboards
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: greenops-grafana
-  namespace: greenops
+  name: solstice-grafana
+  namespace: solstice
   labels:
-    app: greenops-grafana
+    app: solstice-grafana
 spec:
   type: ClusterIP
   selector:
-    app: greenops-grafana
+    app: solstice-grafana
   ports:
     - name: http
       port: 3000

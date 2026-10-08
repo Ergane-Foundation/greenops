@@ -11,15 +11,15 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("greenops-dashboard")
+log = logging.getLogger("solstice-dashboard")
 
-NAMESPACE = os.getenv("GREENOPS_NAMESPACE", "greenops")
+NAMESPACE = os.getenv("SOLSTICE_NAMESPACE", "solstice")
 TELEMETRY_URL = os.getenv(
     "TELEMETRY_URL",
-    "http://greenops-telemetry.greenops.svc.cluster.local:8080/telemetry/status",
+    "http://solstice-telemetry.solstice.svc.cluster.local:8080/telemetry/status",
 )
-CONTROLLER_NAME = os.getenv("CONTROLLER_NAME", "greenops-flink-controller")
-FLINK_LABEL = os.getenv("FLINK_LABEL_SELECTOR", "app=greenops-flink")
+CONTROLLER_NAME = os.getenv("CONTROLLER_NAME", "solstice-flink-controller")
+FLINK_LABEL = os.getenv("FLINK_LABEL_SELECTOR", "app=solstice-flink")
 STATIC_DIR = Path(os.getenv("STATIC_DIR", "/app/static"))
 
 try:
@@ -33,7 +33,7 @@ core = client.CoreV1Api()
 apps = client.AppsV1Api()
 custom = client.CustomObjectsApi()
 
-app = FastAPI(title="greenops-dashboard")
+app = FastAPI(title="solstice-dashboard")
 
 _httpx = httpx.AsyncClient(timeout=5.0)
 
@@ -52,7 +52,7 @@ async def grid():
 def cluster():
     jm_replicas = 0
     try:
-        dep = apps.read_namespaced_deployment("greenops-flink", NAMESPACE)
+        dep = apps.read_namespaced_deployment("solstice-flink", NAMESPACE)
         jm_replicas = dep.status.ready_replicas or 0
     except ApiException as e:
         log.warning("JM deployment read failed: %s", e.reason)
@@ -75,10 +75,10 @@ def cluster():
 def controller():
     try:
         obj = custom.get_namespaced_custom_object(
-            group="greenops.io",
+            group="solstice.io",
             version="v1",
             namespace=NAMESPACE,
-            plural="greenopscontrollers",
+            plural="solsticecontrollers",
             name=CONTROLLER_NAME,
         )
         return {"spec": obj.get("spec", {}), "status": obj.get("status", {})}

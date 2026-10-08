@@ -2,21 +2,21 @@
 
 set -euo pipefail
 
-NS="${NS:-greenops}"
-CR="${CR:-greenops-flink-controller}"
-JOB="${JOB:-greenops-flink}"
+NS="${NS:-solstice}"
+CR="${CR:-solstice-flink-controller}"
+JOB="${JOB:-solstice-flink}"
 TIMEOUT="${TIMEOUT:-300}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 log()  { printf "\033[1;32m[demo]\033[0m %s\n" "$*"; }
 fail() {
   printf "\033[1;31m[fail]\033[0m %s\n" "$*" >&2
-  kubectl get greenopscontrollers "$CR" -n "$NS" >&2 || true
+  kubectl get solsticecontrollers "$CR" -n "$NS" >&2 || true
   kubectl get flinkdeployment "$JOB" -n "$NS" >&2 || true
   exit 1
 }
 
-controller() { kubectl get greenopscontrollers "$CR" -n "$NS" -o jsonpath="$1"; }
+controller() { kubectl get solsticecontrollers "$CR" -n "$NS" -o jsonpath="$1"; }
 flink()      { kubectl get flinkdeployment "$JOB" -n "$NS" -o jsonpath="$1"; }
 
 wait_until() {

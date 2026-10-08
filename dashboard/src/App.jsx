@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import GridStatus from './components/GridStatus.jsx';
 import ReplicaCount from './components/ReplicaCount.jsx';
 import EventLog from './components/EventLog.jsx';
-import { api } from './api/greenopsApi.js';
+import { api } from './api/solsticeApi.js';
 
 const POLL_MS = 5000;
 
@@ -42,7 +42,7 @@ export default function App() {
   return (
     <div className="app">
       <div className="header">
-        <h1>GreenOps</h1>
+        <h1>Solstice</h1>
         <div className="updated">
           {updatedAt ? `updated ${updatedAt.toLocaleTimeString()}` : 'loading…'}
         </div>

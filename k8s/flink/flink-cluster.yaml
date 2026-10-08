@@ -1,17 +1,17 @@
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
 metadata:
-  name: greenops-flink
-  namespace: greenops
+  name: solstice-flink
+  namespace: solstice
 spec:
   image: flink-s3:1.19
   imagePullPolicy: Never
   flinkVersion: v1_19
   flinkConfiguration:
     taskmanager.numberOfTaskSlots: "2"
-    state.checkpoints.dir: s3://greenops/checkpoints
-    state.savepoints.dir: s3://greenops/savepoints
-    s3.endpoint: http://seaweedfs.greenops.svc.cluster.local:8333
+    state.checkpoints.dir: s3://solstice/checkpoints
+    state.savepoints.dir: s3://solstice/savepoints
+    s3.endpoint: http://seaweedfs.solstice.svc.cluster.local:8333
     s3.path.style.access: "true"
     execution.checkpointing.interval: "10000"
     fs.s3a.aws.credentials.provider: com.amazonaws.auth.EnvironmentVariableCredentialsProvider
@@ -20,7 +20,7 @@ spec:
     apiVersion: v1
     kind: Pod
     metadata:
-      name: greenops-flink-pod-template
+      name: solstice-flink-pod-template
     spec:
       containers:
         - name: flink-main-container
@@ -28,12 +28,12 @@ spec:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: greenops-object-store
+                  name: solstice-object-store
                   key: accessKey
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: greenops-object-store
+                  name: solstice-object-store
                   key: secretKey
   jobManager:
     resource:

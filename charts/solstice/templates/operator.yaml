@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "solstice.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "solstice.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.operator.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "solstice.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "solstice.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "solstice.serviceAccountName" . }}
+      containers:
+        - name: operator
+          image: "{{ .Values.operator.image.repository }}:{{ .Values.operator.image.tag }}"
+          imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.operator.metricsPort }}
+          env:
+            - name: METRICS_PORT
+              value: {{ .Values.operator.metricsPort | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx256m"
+          resources:
+            {{- toYaml .Values.operator.resources | nindent 12 }}
+{{- if .Values.metrics.service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "solstice.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "solstice.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ include "solstice.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: metrics
+      port: {{ .Values.metrics.service.port }}
+      targetPort: metrics
+{{- end }}
